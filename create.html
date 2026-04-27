@@ -1,0 +1,252 @@
+# PointSwap – Campus Dining Exchange Platform
+> Capstone Project · HTML/CSS/JS + Firebase
+
+---
+
+## 🚀 Quick Setup (10 minutes)
+
+### Step 1 — Create a Firebase Project
+
+1. Go to **https://console.firebase.google.com**
+2. Click **Add project** → name it `pointswap` → Continue
+3. Disable Google Analytics (not needed) → **Create project**
+
+### Step 2 — Enable Authentication
+
+1. Left sidebar → **Authentication** → **Get Started**
+2. Click **Email/Password** → Enable → **Save**
+
+### Step 3 — Enable Firestore
+
+1. Left sidebar → **Firestore Database** → **Create Database**
+2. Select **Start in test mode** → Next
+3. Choose a region (e.g. `us-central`) → **Done**
+
+### Step 4 — Get your config
+
+1. Click the **gear icon** → **Project Settings**
+2. Scroll to **Your apps** → click **Add app** → Web icon `</>`
+3. Register app (name it "PointSwap web") → **Register App**
+4. Copy the `firebaseConfig` object shown
+
+### Step 5 — Paste config into the project
+
+Open `firebase-config.js` and replace the placeholder values:
+
+```javascript
+const firebaseConfig = {
+  apiKey:            "AIzaSy...",
+  authDomain:        "pointswap-xxxxx.firebaseapp.com",
+  projectId:         "pointswap-xxxxx",
+  storageBucket:     "pointswap-xxxxx.appspot.com",
+  messagingSenderId: "123456789",
+  appId:             "1:123456789:web:abc123"
+};
+```
+
+### Step 6 — Run the app
+
+**You must use a local server** — ES Modules don't work when opening HTML files directly (file:// protocol).
+
+```bash
+# Option A: Python (built-in, no install needed)
+python -m http.server 8000
+# Then open: http://localhost:8000
+
+# Option B: Node.js (install once: npm install -g serve)
+serve .
+# Then open the URL it shows
+
+# Option C: VS Code → Install "Live Server" extension → right-click index.html → "Open with Live Server"
+```
+
+---
+
+## 📁 File Structure
+
+```
+pointswap/
+├── index.html          ← Landing page + Login / Register
+├── dashboard.html      ← Browse available meal listings
+├── create.html         ← Post a meal + manage your listings
+├── messages.html       ← Real-time chat with buyers/sellers
+├── profile.html        ← Profile, incoming requests, history, ratings
+├── styles.css          ← Design system (colors, fonts, components)
+├── firebase-config.js  ← Firebase init (edit this with your config)
+└── README.md           ← This file
+```
+
+---
+
+## 🗃️ Firestore Data Model
+
+```
+/users/{uid}
+  name, email, university
+  avgRating, ratingCount, totalSold, totalBought
+  createdAt
+
+/listings/{listingId}
+  sellerId, sellerName, sellerRating, sellerRatingCount
+  diningHall, mealValue, price
+  availableAt (Timestamp)
+  notes, status ('active' | 'pending' | 'completed' | 'cancelled')
+  createdAt
+
+/requests/{requestId}
+  listingId, buyerId, buyerName, sellerId, sellerName
+  message, status ('pending' | 'accepted' | 'declined' | 'completed')
+  createdAt
+
+/conversations/{convId}          ← convId = sorted(uid1,uid2) + '_' + listingId
+  participants: [uid1, uid2]
+  participantNames: { uid1: name, uid2: name }
+  listingId, lastMessage, lastMessageAt
+
+/conversations/{convId}/messages/{msgId}
+  senderId, senderName, text, createdAt
+```
+
+---
+
+## 🔑 Firestore Security Rules (for production / final submission)
+
+Replace test mode rules with these in **Firestore → Rules**:
+
+```
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    match /users/{uid} {
+      allow read:  if request.auth != null;
+      allow write: if request.auth.uid == uid;
+    }
+
+    match /listings/{id} {
+      allow read:   if request.auth != null;
+      allow create: if request.auth != null;
+      allow update: if request.auth.uid == resource.data.sellerId
+                    || request.auth.uid == resource.data.buyerId;
+      allow delete: if request.auth.uid == resource.data.sellerId;
+    }
+
+    match /requests/{id} {
+      allow read:   if request.auth.uid == resource.data.buyerId
+                    || request.auth.uid == resource.data.sellerId;
+      allow create: if request.auth != null;
+      allow update: if request.auth.uid == resource.data.sellerId
+                    || request.auth.uid == resource.data.buyerId;
+    }
+
+    match /conversations/{cid} {
+      allow read, write: if request.auth.uid in resource.data.participants;
+      match /messages/{mid} {
+        allow read, write: if request.auth != null;
+      }
+    }
+  }
+}
+```
+
+---
+
+## ⚠️ Firestore Composite Indexes
+
+Some queries require composite indexes. Firebase will show an error in the browser console with a **clickable link** to auto-create the index. Just click those links and wait ~1 minute.
+
+Queries that need indexes:
+- `conversations` → `participants (array-contains)` + `lastMessageAt (desc)`
+- `requests` → `sellerId` + `status` + `createdAt`
+- `listings` → `sellerId` + `createdAt`
+
+---
+
+
+---
+
+## 📧 Email Notifications Setup (Firebase Trigger Email Extension)
+
+PointSwap sends real emails for three events:
+- **New meal request** → seller is notified
+- **Request accepted** → buyer is notified  
+- **New chat message** → recipient is notified
+
+This uses the Firebase **Trigger Email** extension. Setup takes ~10 minutes.
+
+### Step 1 — Get a free email sending account
+
+Use **SendGrid** (recommended for students, free tier = 100 emails/day):
+1. Sign up at https://signup.sendgrid.com
+2. Go to **Settings → API Keys → Create API Key** (Full Access)
+3. Copy the key — you'll only see it once
+
+### Step 2 — Install the Firebase Extension
+
+1. Go to https://console.firebase.google.com → your project
+2. Left sidebar → **Extensions** → **Explore extensions**
+3. Search **"Trigger Email"** → Click it → **Install**
+4. Fill in the config:
+   - **SMTP connection URI:**  
+     `smtps://apikey:<YOUR_SENDGRID_API_KEY>@smtp.sendgrid.net:465`  
+     (replace `<YOUR_SENDGRID_API_KEY>` with your actual key)
+   - **Email documents collection:** `mail`
+   - **Default FROM address:** `noreply@yourdomain.com` (or any verified SendGrid sender)
+5. Click **Install extension** and wait ~2 minutes
+
+### Step 3 — Add Firestore rule for the mail collection
+
+Add this to your Firestore rules (so only authenticated users can write):
+
+```
+match /mail/{docId} {
+  allow create: if request.auth != null;
+  allow read, update, delete: if false; // extension handles this
+}
+```
+
+### Step 4 — Test it
+
+Register two accounts, send a message between them — both should receive emails within seconds.
+
+### Troubleshooting
+
+- **Emails not sending?** Check **Extensions → Trigger Email → Logs** in Firebase console
+- **Landing in spam?** In SendGrid, verify your sender domain under Settings → Sender Authentication
+- **SendGrid alternative:** You can also use Gmail SMTP — URI format:  
+  `smtps://your.gmail@gmail.com:<APP_PASSWORD>@smtp.gmail.com:465`  
+  (requires a Gmail App Password, not your regular password)
+
+
+## ✨ Features Implemented
+
+| Feature | Status |
+|---|---|
+| .edu email registration | ✅ |
+| Email/password authentication | ✅ |
+| Create meal listings with live preview | ✅ |
+| Browse & filter by location / price / time | ✅ |
+| Real-time listing updates | ✅ |
+| Send meal requests with optional message | ✅ |
+| Accept / decline incoming requests | ✅ |
+| Real-time messaging / chat | ✅ |
+| Auto-resize chat input | ✅ |
+| Mark exchange complete | ✅ |
+| 5-star rating system | ✅ |
+| Cancel your own listings | ✅ |
+| Profile stats (sold, bought, rating) | ✅ |
+| Toast notifications | ✅ |
+| In-app badge notifications | ✅ |
+| Email notifications (new message, request, accepted) | ✅ |
+
+---
+
+## 🛠 Suggested Next Steps
+
+- [ ] **Email notifications** – Firebase Extensions → Trigger Email
+- [ ] **Push notifications** – Firebase Cloud Messaging
+- [ ] **Profile photos** – Firebase Storage upload
+- [ ] **Semester points tracker** – deadline counter widget
+- [ ] **Map view** – embed Google Maps for dining hall locations
+- [ ] **Admin dashboard** – flag/remove inappropriate listings
+- [ ] **Mobile app** – React Native with Expo using the same Firebase backend

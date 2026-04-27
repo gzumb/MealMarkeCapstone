@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <!-- Performance: preconnect to external resources -->
+  <link rel="preconnect" href="https://www.gstatic.com" crossorigin>
+  <link rel="preconnect" href="https://firestore.googleapis.com" crossorigin>
+  <link rel="preconnect" href="https://identitytoolkit.googleapis.com" crossorigin>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;0,8..60,700;1,8..60,400&family=Source+Sans+3:wght@300;400;600;700;900&display=swap">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;0,8..60,700;1,8..60,400&family=Source+Sans+3:wght@300;400;600;700;900&display=swap">
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Terms of Service – PointSwap</title>
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    body { background: var(--bg-alt); }
+    .tos-wrap {
+      max-width: 760px; margin: 0 auto; padding: 2.5rem 1.5rem;
+    }
+    .tos-header {
+      background: var(--umb-blue-dark); color: #fff;
+      border-radius: var(--r-lg) var(--r-lg) 0 0;
+      padding: 2rem 2.5rem;
+    }
+    .tos-header h1 {
+      font-family: 'Source Serif 4', Georgia, serif;
+      font-size: 1.75rem; margin-bottom: .35rem;
+    }
+    .tos-header p { font-size: .875rem; color: rgba(255,255,255,.65); }
+    .accent-bar { height: 4px; background: linear-gradient(90deg, var(--umb-blue), var(--umb-gold), var(--umb-red)); }
+    .tos-body {
+      background: #fff; border: 1px solid var(--border);
+      border-top: none; border-radius: 0 0 var(--r-lg) var(--r-lg);
+      padding: 2.5rem;
+    }
+    .tos-section { margin-bottom: 2rem; }
+    .tos-section h2 {
+      font-family: 'Source Serif 4', Georgia, serif;
+      font-size: 1.1rem; color: var(--umb-blue-dark);
+      margin-bottom: .75rem;
+      padding-bottom: .5rem;
+      border-bottom: 2px solid var(--border);
+    }
+    .tos-section p, .tos-section li {
+      font-size: .9rem; color: var(--text-md);
+      line-height: 1.75; margin-bottom: .5rem;
+    }
+    .tos-section ul { padding-left: 1.25rem; }
+    .tos-section li { margin-bottom: .35rem; }
+    .highlight-box {
+      background: #fee2e2; border-left: 4px solid var(--umb-red);
+      border-radius: var(--r); padding: 1rem 1.25rem;
+      margin: 1rem 0; font-size: .875rem; color: #7a2e15; line-height: 1.7;
+    }
+    .highlight-box strong { color: var(--umb-red-dk); }
+    .info-box {
+      background: var(--umb-blue-lt); border-left: 4px solid var(--umb-blue);
+      border-radius: var(--r); padding: 1rem 1.25rem;
+      margin: 1rem 0; font-size: .875rem; color: var(--umb-blue-dark); line-height: 1.7;
+    }
+    .back-link {
+      display: inline-flex; align-items: center; gap: .4rem;
+      color: var(--umb-blue); text-decoration: none; font-size: .85rem;
+      font-weight: 700; margin-bottom: 1.25rem;
+    }
+    .back-link:hover { text-decoration: underline; }
+    .effective-date {
+      font-size: .8rem; color: var(--muted); text-align: right;
+      padding-top: 1.5rem; border-top: 1px solid var(--border);
+    }
+  </style>
+</head>
+<body>
+<div class="tos-wrap">
+
+  <a href="index.html" class="back-link">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+    Back to Sign In
+  </a>
+
+  <div class="tos-header">
+    <h1>Terms of Service</h1>
+    <p>PointSwap — UMass Boston Campus Dining Exchange</p>
+  </div>
+  <div class="accent-bar"></div>
+  <div class="tos-body">
+
+    <div class="highlight-box">
+      <strong>Important:</strong> PointSwap is a coordination platform only. We do not process payments, guarantee transactions, or verify the identity of users beyond their university email address. By using PointSwap, you accept full responsibility for any in-person exchange you choose to participate in.
+    </div>
+
+    <div class="tos-section">
+      <h2>1. What PointSwap Is</h2>
+      <p>PointSwap is a student-to-student coordination tool that allows UMass Boston students to connect with one another to arrange informal meal exchanges involving university dining points. PointSwap does not sell meals, does not process payments of any kind, and is not affiliated with UMass Boston Dining Services.</p>
+      <p>PointSwap acts solely as a bulletin board and messaging platform. We are not a party to any transaction between users.</p>
+    </div>
+
+    <div class="tos-section">
+      <h2>2. No Payment Processing</h2>
+      <p>PointSwap does not handle, process, hold, or facilitate any monetary transactions. All payments between users occur entirely outside the platform — in person, using cash, Venmo, or any other method agreed upon by both parties.</p>
+      <div class="highlight-box">
+        <strong>PointSwap is not responsible for any payment disputes, non-payment, or financial loss of any kind.</strong> If a user does not pay or refuses to pay after a meal is purchased, that dispute is entirely between the two individuals involved. PointSwap has no ability to recover funds on your behalf.
+      </div>
+    </div>
+
+    <div class="tos-section">
+      <h2>3. User Responsibility & Fraud</h2>
+      <p>By creating an account, you agree that:</p>
+      <ul>
+        <li>You are a currently enrolled student at an accredited university with a valid .edu email address.</li>
+        <li>You will only post listings for dining points you genuinely have available.</li>
+        <li>You will only request meals you intend to follow through on.</li>
+        <li>You will conduct all exchanges in person at a public campus dining location.</li>
+        <li>You will not use PointSwap to deceive, defraud, or harm other users in any way.</li>
+        <li>You will not create fake listings or submit false requests.</li>
+      </ul>
+      <div class="highlight-box">
+        <strong>Fraudulent activity is entirely the responsibility of the individual committing it.</strong> PointSwap bears no liability for scams, fraud, no-shows, or any other dishonest conduct by users. Any user found engaging in fraudulent behavior may have their account removed. Severe cases may be reported to university administration.
+      </div>
+    </div>
+
+    <div class="tos-section">
+      <h2>4. Safety & In-Person Exchanges</h2>
+      <p>All meal exchanges must take place in person at a campus dining hall during normal operating hours. You should:</p>
+      <ul>
+        <li>Only meet in public, well-lit campus locations.</li>
+        <li>Confirm the time and location through the PointSwap messaging system before meeting.</li>
+        <li>Never share personal financial information (bank account, debit card numbers, etc.) through the platform or in person.</li>
+        <li>Never send money in advance of receiving the meal.</li>
+        <li>Trust your instincts — if something feels wrong, do not proceed with the exchange.</li>
+      </ul>
+      <div class="info-box">
+        <strong>Tip:</strong> The safest exchanges happen when the seller purchases the meal in front of you at the dining hall register before any payment is made. Do not pay before you receive the meal.
+      </div>
+    </div>
+
+    <div class="tos-section">
+      <h2>5. No Guarantees</h2>
+      <p>PointSwap makes no guarantees about:</p>
+      <ul>
+        <li>The availability, accuracy, or legitimacy of any listing.</li>
+        <li>Whether a seller actually has the dining points they claim to have.</li>
+        <li>Whether a scheduled exchange will take place.</li>
+        <li>The behavior, reliability, or identity of any user beyond their .edu email.</li>
+      </ul>
+      <p>User ratings are provided for informational purposes only and do not constitute a guarantee of trustworthiness.</p>
+    </div>
+
+    <div class="tos-section">
+      <h2>6. Limitation of Liability</h2>
+      <p>To the fullest extent permitted by applicable law, PointSwap, its creators, and its operators shall not be liable for any direct, indirect, incidental, or consequential damages arising from your use of the platform, including but not limited to financial loss, personal injury, or property damage resulting from in-person exchanges arranged through PointSwap.</p>
+      <p>You use PointSwap entirely at your own risk.</p>
+    </div>
+
+    <div class="tos-section">
+      <h2>7. Account Conduct</h2>
+      <p>You agree not to:</p>
+      <ul>
+        <li>Create multiple accounts or impersonate another person.</li>
+        <li>Post listings you cannot fulfill.</li>
+        <li>Use the platform to harass, threaten, or abuse other users.</li>
+        <li>Attempt to circumvent the .edu email requirement.</li>
+        <li>Use PointSwap for any purpose other than arranging campus dining exchanges.</li>
+      </ul>
+      <p>PointSwap reserves the right to remove any account that violates these terms without notice.</p>
+    </div>
+
+    <div class="tos-section">
+      <h2>8. Changes to These Terms</h2>
+      <p>These terms may be updated at any time. Continued use of PointSwap after changes are posted constitutes acceptance of the updated terms.</p>
+    </div>
+
+    <div class="tos-section">
+      <h2>9. Contact</h2>
+      <p>PointSwap is a student capstone project developed at UMass Boston. For questions or concerns, contact the platform administrator through your university email.</p>
+    </div>
+
+    <div class="effective-date">Last updated: April 2025 &nbsp;·&nbsp; PointSwap is a UMass Boston student project</div>
+
+  </div>
+</div>
+
+<!-- Site Footer -->
+<footer style="margin-top:3rem;background:var(--umb-blue-dark);padding:1.75rem 2rem;border-top:3px solid var(--umb-gold);">
+  <div style="max-width:1200px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:1rem;">
+
+    <!-- Left: brand -->
+    <div style="display:flex;align-items:center;gap:.75rem;">
+      <div style="width:32px;height:32px;background:var(--umb-gold);border-radius:6px;display:flex;align-items:center;justify-content:center;font-family:'Source Serif 4',Georgia,serif;font-size:.8rem;font-weight:700;color:var(--umb-blue-dark);flex-shrink:0;">PS</div>
+      <div>
+        <div style="font-family:'Source Serif 4',Georgia,serif;font-weight:700;color:#fff;font-size:.9rem;line-height:1.2;">PointSwap</div>
+        <div style="font-size:.68rem;color:rgba(255,255,255,.45);letter-spacing:.05em;text-transform:uppercase;">UMass Boston Dining Exchange</div>
+      </div>
+    </div>
+
+    <!-- Center: links -->
+    <div style="display:flex;align-items:center;gap:1.5rem;flex-wrap:wrap;">
+      <a href="tos.html" style="color:rgba(255,255,255,.55);font-size:.78rem;text-decoration:none;transition:color .15s;" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='rgba(255,255,255,.55)'">Terms of Service</a>
+      <a href="https://www.umb.edu/registrar/academic-calendar/" target="_blank" style="color:rgba(255,255,255,.55);font-size:.78rem;text-decoration:none;transition:color .15s;" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='rgba(255,255,255,.55)'">UMB Calendar</a>
+      <a href="https://docs.google.com/forms/d/e/1FAIpQLSdUyonvfvlpv7T6oQ2jBR94P2aSyiAn9H2W5nlcPUN65PwCfQ/viewform?usp=publish-editor" target="_blank" style="color:rgba(255,255,255,.55);font-size:.78rem;text-decoration:none;transition:color .15s;" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='rgba(255,255,255,.55)'">Give Feedback</a>
+    </div>
+
+    <!-- Right: Instagram -->
+    <a href="https://www.instagram.com/pointswap.umb/" target="_blank" rel="noopener"
+      style="display:flex;align-items:center;gap:.6rem;text-decoration:none;
+        background:linear-gradient(135deg,#833ab4,#fd1d1d,#fcb045);
+        padding:.55rem 1rem;border-radius:99px;
+        color:#fff;font-size:.8rem;font-weight:700;
+        box-shadow:0 2px 12px rgba(0,0,0,.25);
+        transition:all .15s;flex-shrink:0;"
+      onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 4px 18px rgba(0,0,0,.35)'"
+      onmouseout="this.style.transform='';this.style.boxShadow='0 2px 12px rgba(0,0,0,.25)'">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="2" y="2" width="20" height="20" rx="5" ry="5"/>
+        <circle cx="12" cy="12" r="4"/>
+        <circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none"/>
+      </svg>
+      @pointswap.umb
+    </a>
+
+  </div>
+
+  <div style="max-width:1200px;margin:.75rem auto 0;padding-top:.75rem;border-top:1px solid rgba(255,255,255,.08);text-align:center;">
+    <span style="font-size:.68rem;color:rgba(255,255,255,.3);">© 2025 PointSwap · A UMass Boston student project · Not affiliated with UMass Boston Dining Services</span>
+  </div>
+</footer>
+
+</body>
+</html>

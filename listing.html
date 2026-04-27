@@ -1,0 +1,733 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <!-- Performance: preconnect to external resources -->
+  <link rel="preconnect" href="https://www.gstatic.com" crossorigin>
+  <link rel="preconnect" href="https://firestore.googleapis.com" crossorigin>
+  <link rel="preconnect" href="https://identitytoolkit.googleapis.com" crossorigin>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;0,8..60,700;1,8..60,400&family=Source+Sans+3:wght@300;400;600;700;900&display=swap">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;0,8..60,700;1,8..60,400&family=Source+Sans+3:wght@300;400;600;700;900&display=swap">
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PointSwap – UMass Boston Campus Dining Exchange</title>
+  <link rel="stylesheet" href="styles.css">
+  <style>
+ body { background: var(--bg-alt); }
+
+ .landing {
+ min-height: 100vh;
+ display: grid;
+ grid-template-columns: 1fr 440px;
+ }
+
+ /* Left hero */
+ .hero {
+ background: var(--umb-blue-dark);
+ padding: 3.5rem;
+ display: flex; flex-direction: column; justify-content: center;
+ position: relative; overflow: hidden;
+ }
+ .hero::before {
+ content: '';
+ position: absolute; top: 0; left: 0; right: 0;
+ height: 4px;
+ background: linear-gradient(90deg, var(--umb-gold) 0%, var(--umb-red) 100%);
+ }
+ /* Subtle geometric bg pattern */
+ .hero::after {
+ content: '';
+ position: absolute; inset: 0;
+ background-image:
+ repeating-linear-gradient(45deg, rgba(255,255,255,.015) 0, rgba(255,255,255,.015) 1px, transparent 0, transparent 50%);
+ background-size: 20px 20px;
+ pointer-events: none;
+ }
+
+ .hero-eyebrow {
+ display: inline-flex; align-items: center; gap: .5rem;
+ background: rgba(197,146,23,.2);
+ border: 1px solid rgba(197,146,23,.4);
+ color: var(--umb-gold);
+ padding: .3rem .8rem; border-radius: 3px;
+ font-size: .72rem; font-weight: 700;
+ text-transform: uppercase; letter-spacing: .1em;
+ margin-bottom: 1.5rem; width: fit-content;
+ }
+ .hero h1 {
+ font-family: 'Source Serif 4', Georgia, serif;
+ font-size: clamp(2rem, 3.5vw, 3.5rem);
+ line-height: 1.1; color: #fff;
+ margin-bottom: 1.25rem; font-weight: 700;
+ }
+ .hero h1 em { color: var(--umb-gold); font-style: italic; }
+ .hero p {
+ font-size: .95rem; color: rgba(255,255,255,.65);
+ line-height: 1.75; max-width: 420px; margin-bottom: 2.5rem;
+ }
+
+ /* Right auth panel */
+ .auth-panel {
+ background: #fff;
+ display: flex; align-items: stretch; flex-direction: column;
+ border-left: 1px solid var(--border);
+ }
+ .auth-panel-top {
+ background: var(--umb-blue); padding: 1.25rem 2rem;
+ display: flex; align-items: center; gap: .6rem;
+ }
+ .auth-panel-icon {
+ width: 34px; height: 34px; background: var(--umb-gold);
+ border-radius: 3px; display: flex; align-items: center; justify-content: center; font-size: 1rem;
+ }
+ .auth-panel-label {
+ font-size: .8rem; color: rgba(255,255,255,.75);
+ text-transform: uppercase; letter-spacing: .08em; font-weight: 700;
+ }
+ .auth-content {
+ flex: 1; display: flex; align-items: center; justify-content: center;
+ padding: 2.5rem;
+ }
+ .auth-box { width: 100%; }
+ .auth-title {
+ font-family: 'Source Serif 4', Georgia, serif;
+ font-size: 1.65rem; color: var(--umb-blue-dark); margin-bottom: .2rem;
+ }
+ .auth-sub { color: var(--muted); font-size: .875rem; margin-bottom: 1.75rem; }
+ .auth-tabs {
+ display: flex; gap: 0;
+ border-bottom: 2px solid var(--border);
+ margin-bottom: 1.75rem;
+ }
+ .auth-tab {
+ flex: 1; padding: .65rem;
+ text-align: center; border-bottom: 3px solid transparent;
+ margin-bottom: -2px;
+ font-size: .875rem; font-weight: 700;
+ cursor: pointer; color: var(--muted); transition: all .15s;
+ }
+ .auth-tab.active { color: var(--umb-blue); border-bottom-color: var(--umb-blue); }
+ .auth-form { display: none; }
+ .auth-form.active { display: block; }
+ .auth-footer {
+ font-size: .72rem; color: var(--muted);
+ text-align: center; margin-top: 1rem; line-height: 1.55;
+ }
+
+ /* Verification pending screen */
+ #verify-screen {
+ display: none;
+ flex-direction: column; align-items: center;
+ justify-content: center; padding: 2.5rem;
+ text-align: center; flex: 1;
+ }
+ .verify-icon {
+ width: 72px; height: 72px; border-radius: 50%;
+ background: var(--umb-gold-lt);
+ border: 3px solid var(--umb-gold);
+ display: flex; align-items: center; justify-content: center;
+ font-size: 2rem; margin: 0 auto 1.5rem;
+ }
+ .verify-title {
+ font-family: 'Source Serif 4', Georgia, serif;
+ font-size: 1.5rem; color: var(--umb-blue-dark); margin-bottom: .5rem;
+ }
+ .verify-body {
+ font-size: .875rem; color: var(--muted);
+ line-height: 1.7; max-width: 300px; margin: 0 auto 1.25rem;
+ }
+ .verify-email-badge {
+ display: inline-block; background: var(--umb-blue-lt);
+ color: var(--umb-blue-dark); padding: .3rem .9rem;
+ border-radius: 4px; font-size: .875rem; font-weight: 700;
+ margin-bottom: 1.5rem;
+ }
+ .verify-steps {
+ text-align: left; width: 100%; max-width: 280px;
+ margin: 0 auto 1.5rem;
+ display: flex; flex-direction: column; gap: .6rem;
+ }
+ .verify-step { display:flex; align-items:center; gap:.75rem; font-size:.83rem; color:var(--muted); }
+ .verify-step-num {
+ width:24px; height:24px; border-radius:50%;
+ background:var(--umb-blue); color:#fff;
+ display:flex; align-items:center; justify-content:center;
+ font-size:.7rem; font-weight:700; flex-shrink:0;
+ }
+ #btn-resend {
+ font-size:.8rem; margin-top:.6rem;
+ background:transparent; border:none;
+ color:var(--umb-blue); cursor:pointer;
+ text-decoration:underline; font-family:inherit;
+ padding:.3rem; transition:color .15s;
+ }
+ #btn-resend:hover { color:var(--umb-blue-dark); }
+ #btn-resend:disabled { opacity:.5; cursor:not-allowed; text-decoration:none; }
+
+ @media (max-width: 768px) {
+ .landing { grid-template-columns: 1fr; }
+ .hero { min-height: 280px; padding: 2.5rem 1.5rem; }
+ .auth-panel { min-height: auto; }
+ }
+ </style>
+</head>
+<body>
+
+<div class="accent-bar"></div>
+
+<div class="landing">
+ <!-- Hero -->
+ <div class="hero">
+ <div class="hero-eyebrow">UMass Boston · Campus Dining Exchange</div>
+ <h1>Make your dining<br>points <em>work for you</em></h1>
+ <p>PointSwap connects UMass Boston students — share unused dining points, access affordable meals, and reduce campus food waste together.</p>
+ </div>
+
+ <!-- Auth Panel -->
+ <div class="auth-panel">
+ <div class="auth-panel-top">
+ <div class="auth-panel-icon" style="font-family:'Source Serif 4',Georgia,serif;font-size:.85rem;font-weight:700;letter-spacing:-.5px;">PS</div>
+ <div class="auth-panel-label">Student Portal</div>
+ </div>
+ <div class="auth-content">
+  <div class="auth-box">
+   <h2 class="auth-title" id="auth-title">Sign In</h2>
+   <p class="auth-sub">Use your <strong>@umb.edu</strong> email to access PointSwap.</p>
+
+   <div class="auth-tabs">
+    <div class="auth-tab active" onclick="switchTab('login')">Sign In</div>
+    <div class="auth-tab" onclick="switchTab('register')">Create Account</div>
+   </div>
+
+   <!-- LOGIN -->
+   <div class="auth-form active" id="form-login">
+    <div class="error-box" id="err-login"></div>
+    <div class="form-group">
+     <label class="form-label">UMB Email</label>
+     <input type="email" class="form-input" id="login-email" placeholder="you@umb.edu" autocomplete="email" />
+    </div>
+    <div class="form-group">
+     <label class="form-label">Password</label>
+     <div style="position:relative;">
+      <input type="password" class="form-input" id="login-pw" placeholder="••••••••" autocomplete="current-password" style="padding-right:2.75rem;" />
+      <button type="button" onclick="togglePw('login-pw','eye-login')" tabindex="-1"
+        style="position:absolute;right:.75rem;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--muted);padding:0;display:flex;align-items:center;">
+        <svg id="eye-login" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+        </svg>
+      </button>
+     </div>
+    </div>
+    <button class="btn btn-primary btn-full" id="btn-login" onclick="doLogin()">Sign In →</button>
+    <p style="text-align:center;margin-top:.75rem;font-size:.8rem;color:var(--muted);">
+     <a href="forgot-password.html" style="color:var(--umb-blue);font-weight:700;">Forgot your password?</a>
+    </p>
+   </div>
+
+   <!-- REGISTER -->
+   <div class="auth-form" id="form-register">
+    <div class="error-box" id="err-register"></div>
+    <div class="form-group">
+     <label class="form-label">Full Name</label>
+     <input type="text" class="form-input" id="reg-name" placeholder="Alex Johnson" autocomplete="name" maxlength="60" />
+    </div>
+    <div class="form-group">
+     <label class="form-label">UMB Email <span style="color:var(--umb-red);font-size:.75rem;">(@umb.edu only)</span></label>
+     <input type="email" class="form-input" id="reg-email" placeholder="you@umb.edu" autocomplete="email" />
+    </div>
+    <div class="form-group">
+     <label class="form-label">Password <span style="color:var(--muted);font-size:.75rem;font-weight:400;">(6+ characters)</span></label>
+     <div style="position:relative;">
+      <input type="password" class="form-input" id="reg-pw" placeholder="Create a password" autocomplete="new-password" style="padding-right:2.75rem;" />
+      <button type="button" onclick="togglePw('reg-pw','eye-reg')" tabindex="-1"
+        style="position:absolute;right:.75rem;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--muted);padding:0;display:flex;align-items:center;">
+        <svg id="eye-reg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+        </svg>
+      </button>
+     </div>
+    </div>
+    <div class="form-group">
+     <label class="form-label">Confirm Password</label>
+     <div style="position:relative;">
+      <input type="password" class="form-input" id="reg-pw-confirm" placeholder="Re-enter your password" autocomplete="new-password" style="padding-right:2.75rem;" />
+      <button type="button" onclick="togglePw('reg-pw-confirm','eye-confirm')" tabindex="-1"
+        style="position:absolute;right:.75rem;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--muted);padding:0;display:flex;align-items:center;">
+        <svg id="eye-confirm" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+        </svg>
+      </button>
+     </div>
+    </div>
+    <div style="display:flex;align-items:flex-start;gap:.6rem;margin-bottom:1rem;padding:.75rem;background:var(--bg-alt);border-radius:var(--r);border:1px solid var(--border);">
+     <input type="checkbox" id="tos-check" style="margin-top:3px;width:16px;height:16px;cursor:pointer;flex-shrink:0;accent-color:var(--umb-blue);" />
+     <label for="tos-check" style="font-size:.8rem;color:var(--muted);cursor:pointer;line-height:1.55;">
+      I have read and agree to the
+      <a href="#" onclick="showTos(event)" style="color:var(--umb-blue);font-weight:700;text-decoration:underline;">Terms of Service</a>.
+      I understand that PointSwap is a coordination tool only and all exchanges are my own responsibility.
+     </label>
+    </div>
+    <button class="btn btn-accent btn-full" id="btn-register" onclick="doRegister()">Create Account →</button>
+    <p class="auth-footer">PointSwap is a <strong>coordination tool only</strong>. All transactions occur in-person at campus dining halls.</p>
+   </div>
+  </div>
+ </div>
+
+ <!-- Verification pending screen -->
+ <div id="verify-screen">
+ <div class="verify-icon">
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#c59217" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/>
+        </svg>
+      </div>
+ <h2 class="verify-title">Check your inbox</h2>
+ <p class="verify-body">We sent a verification link to:</p>
+ <div class="verify-email-badge" id="verify-email-addr"><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="562f39232416333b373f3a78333223">[email&#160;protected]</a></div>
+ <div class="verify-steps">
+ <div class="verify-step">
+ <div class="verify-step-num">1</div>
+ <span>Open the email from Firebase / noreply@... in your inbox</span>
+ </div>
+ <div class="verify-step">
+ <div class="verify-step-num">2</div>
+ <span>Click <strong>"Verify email address"</strong></span>
+ </div>
+ <div class="verify-step">
+ <div class="verify-step-num">3</div>
+ <span>Come back here and sign in</span>
+ </div>
+ </div>
+ <button class="btn btn-primary" onclick="backToLogin()">← Back to Sign In</button>
+ <button id="btn-resend" onclick="resendVerification()">Resend verification email</button>
+ <p style="font-size:.72rem;color:var(--muted);margin-top:1rem;">
+ Check your spam folder if you don't see it within a minute.
+ </p>
+ </div>
+ </div> <!-- end verify-screen -->
+ </div>
+</div>
+
+<!-- TOS Modal -->
+<div class="modal-overlay" id="tos-modal" style="z-index:400;">
+  <div class="modal" style="max-width:560px;max-height:80vh;display:flex;flex-direction:column;border-top:4px solid var(--umb-blue);">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;">
+      <h3 class="modal-title" style="margin-bottom:0;">Terms of Service</h3>
+      <button onclick="closeTos()" style="background:none;border:none;font-size:1.25rem;cursor:pointer;color:var(--muted);padding:.25rem;">&times;</button>
+    </div>
+
+    <div style="overflow-y:auto;flex:1;padding-right:.5rem;font-size:.83rem;color:var(--text-md);line-height:1.7;">
+
+      <div style="background:#fee2e2;border-left:3px solid var(--umb-red);border-radius:var(--r);padding:.75rem 1rem;margin-bottom:1.25rem;font-size:.82rem;color:#7a2e15;">
+        <strong>PointSwap is a coordination platform only.</strong> We do not process payments or guarantee transactions. All exchanges are your own responsibility.
+      </div>
+
+      <p style="font-weight:700;color:var(--umb-blue-dark);margin-bottom:.35rem;">By creating an account you agree that:</p>
+      <ul style="padding-left:1.1rem;margin-bottom:1rem;">
+        <li style="margin-bottom:.4rem;">You are a currently enrolled university student with a valid .edu email.</li>
+        <li style="margin-bottom:.4rem;">All meal exchanges take place <strong>in person</strong> at a campus dining hall.</li>
+        <li style="margin-bottom:.4rem;">You will only post listings for dining points you genuinely have available.</li>
+        <li style="margin-bottom:.4rem;">You will never pay in advance — always wait until the meal is purchased in front of you.</li>
+        <li style="margin-bottom:.4rem;">You will not use PointSwap to deceive, defraud, or harm other users.</li>
+      </ul>
+
+      <p style="font-weight:700;color:var(--umb-blue-dark);margin-bottom:.35rem;">Fraud &amp; Scams:</p>
+      <div style="background:#fee2e2;border-left:3px solid var(--umb-red);border-radius:var(--r);padding:.75rem 1rem;margin-bottom:1rem;font-size:.82rem;color:#7a2e15;">
+        <strong>Fraudulent activity is entirely the responsibility of the individual committing it.</strong> PointSwap bears no liability for scams, fraud, no-shows, or any dishonest conduct. Fraudulent users may be reported to university administration.
+      </div>
+
+      <p style="font-weight:700;color:var(--umb-blue-dark);margin-bottom:.35rem;">No Guarantees:</p>
+      <p style="margin-bottom:1rem;">PointSwap makes no guarantees about the availability or legitimacy of listings, whether sellers have the points they claim, or whether any exchange will take place. You use PointSwap entirely at your own risk.</p>
+
+      <p style="font-weight:700;color:var(--umb-blue-dark);margin-bottom:.35rem;">Limitation of Liability:</p>
+      <p style="margin-bottom:1rem;">PointSwap and its creators are not liable for any financial loss, personal injury, or damages of any kind arising from exchanges arranged through the platform.</p>
+
+      <p style="font-size:.75rem;color:var(--muted);">
+        <a href="tos.html" target="_blank" style="color:var(--umb-blue);">Read the full Terms of Service →</a>
+      </p>
+    </div>
+
+    <div style="padding-top:1rem;border-top:1px solid var(--border);display:flex;gap:.75rem;margin-top:.5rem;">
+      <button class="btn btn-outline" onclick="closeTos()" style="flex:1;">Close</button>
+      <button class="btn btn-primary" onclick="acceptTos()" style="flex:1;">I Agree →</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast-container" id="toasts"></div>
+
+
+<!-- TOS Modal -->
+<div class="modal-overlay" id="tos-modal" style="z-index:400;">
+  <div class="modal" style="max-width:560px;max-height:80vh;display:flex;flex-direction:column;border-top:4px solid var(--umb-blue);">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;">
+      <h3 class="modal-title" style="margin-bottom:0;">Terms of Service</h3>
+      <button onclick="closeTos()" style="background:none;border:none;font-size:1.25rem;cursor:pointer;color:var(--muted);padding:.25rem;">&times;</button>
+    </div>
+
+    <div style="overflow-y:auto;flex:1;padding-right:.5rem;font-size:.83rem;color:var(--text-md);line-height:1.7;">
+
+      <div style="background:#fee2e2;border-left:3px solid var(--umb-red);border-radius:var(--r);padding:.75rem 1rem;margin-bottom:1.25rem;font-size:.82rem;color:#7a2e15;">
+        <strong>PointSwap is a coordination platform only.</strong> We do not process payments or guarantee transactions. All exchanges are your own responsibility.
+      </div>
+
+      <p style="font-weight:700;color:var(--umb-blue-dark);margin-bottom:.35rem;">By creating an account you agree that:</p>
+      <ul style="padding-left:1.1rem;margin-bottom:1rem;">
+        <li style="margin-bottom:.4rem;">You are a currently enrolled university student with a valid .edu email.</li>
+        <li style="margin-bottom:.4rem;">All meal exchanges take place <strong>in person</strong> at a campus dining hall.</li>
+        <li style="margin-bottom:.4rem;">You will only post listings for dining points you genuinely have available.</li>
+        <li style="margin-bottom:.4rem;">You will never pay in advance — always wait until the meal is purchased in front of you.</li>
+        <li style="margin-bottom:.4rem;">You will not use PointSwap to deceive, defraud, or harm other users.</li>
+      </ul>
+
+      <p style="font-weight:700;color:var(--umb-blue-dark);margin-bottom:.35rem;">Fraud &amp; Scams:</p>
+      <div style="background:#fee2e2;border-left:3px solid var(--umb-red);border-radius:var(--r);padding:.75rem 1rem;margin-bottom:1rem;font-size:.82rem;color:#7a2e15;">
+        <strong>Fraudulent activity is entirely the responsibility of the individual committing it.</strong> PointSwap bears no liability for scams, fraud, no-shows, or any dishonest conduct. Fraudulent users may be reported to university administration.
+      </div>
+
+      <p style="font-weight:700;color:var(--umb-blue-dark);margin-bottom:.35rem;">No Guarantees:</p>
+      <p style="margin-bottom:1rem;">PointSwap makes no guarantees about the availability or legitimacy of listings, whether sellers have the points they claim, or whether any exchange will take place. You use PointSwap entirely at your own risk.</p>
+
+      <p style="font-weight:700;color:var(--umb-blue-dark);margin-bottom:.35rem;">Limitation of Liability:</p>
+      <p style="margin-bottom:1rem;">PointSwap and its creators are not liable for any financial loss, personal injury, or damages of any kind arising from exchanges arranged through the platform.</p>
+
+      <p style="font-size:.75rem;color:var(--muted);">
+        <a href="tos.html" target="_blank" style="color:var(--umb-blue);">Read the full Terms of Service →</a>
+      </p>
+    </div>
+
+    <div style="padding-top:1rem;border-top:1px solid var(--border);display:flex;gap:.75rem;margin-top:.5rem;">
+      <button class="btn btn-outline" onclick="closeTos()" style="flex:1;">Close</button>
+      <button class="btn btn-primary" onclick="acceptTos()" style="flex:1;">I Agree →</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast-container" id="toasts"></div>
+
+<!-- Firebase Compat SDK (synchronous, no module timing issues) -->
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script>
+  // ── Firebase init ──────────────────────────────────
+  const firebaseConfig = {
+    apiKey:            "AIzaSyBfnA0UKyCNNq025JTAph-i6JLO8mvkfNA",
+    authDomain:        "pointswap-fe5aa.firebaseapp.com",
+    projectId:         "pointswap-fe5aa",
+    storageBucket:     "pointswap-fe5aa.firebasestorage.app",
+    messagingSenderId: "344714572903",
+    appId:             "1:344714572903:web:9961afddabd95a798250c2"
+  };
+  firebase.initializeApp(firebaseConfig);
+  const auth = firebase.auth();
+  const db   = firebase.firestore();
+
+  var _loginInProgress = false; // prevents onAuthStateChanged racing with doLogin
+
+  // ── Microsoft / Outlook SSO ────────────────────────
+  function doMicrosoftLogin() {
+    _loginInProgress = true;
+    var provider = new firebase.auth.OAuthProvider('microsoft.com');
+    // Request email scope so we can verify .edu
+    provider.addScope('email');
+    provider.addScope('profile');
+    // Use the registered Azure app to ensure correct login screen
+    provider.setCustomParameters({
+      // 'common' allows both personal and organizational accounts (UMB students)
+      tenant: 'common',
+      // Prompt select_account so users can choose their UMB account
+      prompt: 'select_account'
+    });
+
+    firebase.auth().signInWithPopup(provider)
+      .then(function(result) {
+        var user = result.user;
+        var email = user.email || '';
+
+        // Enforce .edu requirement
+        if (!email.endsWith('@umb.edu')) {
+          return firebase.auth().signOut().then(function() {
+            _loginInProgress = false;
+            err('err-login', 'PointSwap is for UMass Boston students only. Please use your @umb.edu email.');
+          });
+        }
+
+        // Check if user doc exists in Firestore, create if new
+        return db.collection('users').doc(user.uid).get().then(function(snap) {
+          if (!snap.exists()) {
+            var domain = email.split('@')[1];
+            var domainMap = {
+              'umb.edu': 'UMass Boston', 'umass.edu': 'UMass Amherst',
+              'bc.edu': 'Boston College', 'bu.edu': 'Boston University',
+              'neu.edu': 'Northeastern University', 'mit.edu': 'MIT',
+            };
+            var university = domainMap[domain] || domain.replace('.edu','');
+            return db.collection('users').doc(user.uid).set({
+              name:        user.displayName || email.split('@')[0],
+              email:       email,
+              university:  university,
+              provider:    'microsoft',
+              avgRating:   0, ratingCount: 0, totalSold: 0, totalBought: 0,
+              createdAt:   firebase.firestore.FieldValue.serverTimestamp(),
+              lastLogin:   firebase.firestore.FieldValue.serverTimestamp()
+            });
+          }
+        }).then(function() {
+          // Update lastLogin every time
+          return db.collection('users').doc(user.uid).update({
+            lastLogin: firebase.firestore.FieldValue.serverTimestamp()
+          }).catch(function() {}); // ignore if doc doesn't exist yet
+        }).then(function() {
+          _loginInProgress = false;
+          window.location.href = 'dashboard.html';
+        });
+      })
+      .catch(function(e) {
+        _loginInProgress = false;
+        if (e.code === 'auth/popup-closed-by-user') return; // user cancelled
+        if (e.code === 'auth/popup-blocked') {
+          err('err-login', 'Popup was blocked. Please allow popups for this site and try again.');
+          return;
+        }
+        err('err-login', 'Microsoft sign-in failed. Try again or use email below.');
+        console.error('Microsoft SSO error:', e);
+      });
+  }
+
+
+  // ── Show/hide password toggle ──────────────────────
+  function togglePw(inputId, iconId) {
+    var input = document.getElementById(inputId);
+    var icon  = document.getElementById(iconId);
+    var show  = input.type === 'password';
+    input.type = show ? 'text' : 'password';
+    // Swap icon: open eye vs eye-off
+    icon.innerHTML = show
+      ? '<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/>'
+      : '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>';
+  }
+
+
+  // ── Auth state ──────────────────────────────────────
+  // On every page load/refresh, check if signed-in user is verified.
+  // If not — sign them out immediately so they can't bypass verification.
+  auth.onAuthStateChanged(function(u) {
+    if (!u) return;
+    if (_loginInProgress) return;
+    go('dashboard.html');
+  });
+
+  // ── Helpers ─────────────────────────────────────────
+  function go(p)      { window.location.href = p; }
+  function err(id, m) { var e = document.getElementById(id); e.textContent = m; e.style.display = 'block'; }
+  function clearErr(id) { document.getElementById(id).style.display = 'none'; }
+  function setLoading(btnId, on, label) {
+    var b = document.getElementById(btnId);
+    b.disabled = on;
+    b.innerHTML = on ? '<div class="spinner"></div>' : label;
+  }
+
+  var AUTH_ERRORS = {
+    'auth/user-not-found':      'No account found with this email.',
+    'auth/wrong-password':      'Incorrect password.',
+    'auth/invalid-credential':  'Invalid email or password.',
+    'auth/too-many-requests':   'Too many attempts — please wait and try again.',
+    'auth/email-already-in-use':'An account with this email already exists.',
+    'auth/weak-password':       'Password must be at least 6 characters.',
+    'auth/invalid-email':       "That doesn't look like a valid email.",
+  };
+
+  // ── Tab switch ───────────────────────────────────────
+  function switchTab(tab) {
+    var isLogin = tab === 'login';
+    document.querySelectorAll('.auth-tab').forEach(function(t, i) {
+      t.classList.toggle('active', isLogin ? i === 0 : i === 1);
+    });
+    document.getElementById('form-login').classList.toggle('active', isLogin);
+    document.getElementById('form-register').classList.toggle('active', !isLogin);
+    document.getElementById('auth-title').textContent = isLogin ? 'Sign In' : 'Create Account';
+    clearErr('err-login'); clearErr('err-register');
+  }
+
+  // ── Login ────────────────────────────────────────────
+  function doLogin() {
+    clearErr('err-login');
+    var email = document.getElementById('login-email').value.trim();
+    var pw    = document.getElementById('login-pw').value;
+    if (!email || !pw) { err('err-login', 'Please fill in all fields.'); return; }
+    if (!email.endsWith('@umb.edu')) { err('err-login', 'Please use your @umb.edu email to sign in.'); return; }
+    if (!email.endsWith('@umb.edu')) { err('err-login', 'Please use your @umb.edu email to sign in.'); return; }
+    setLoading('btn-login', true, 'Sign In →');
+    _loginInProgress = true;
+    auth.signInWithEmailAndPassword(email, pw)
+      .then(function(result) {
+        var user = result.user;
+        return user.reload().then(function() {
+          return db.collection('users').doc(user.uid).update({
+            lastLogin: firebase.firestore.FieldValue.serverTimestamp()
+          }).catch(function() {});
+        }).then(function() {
+          _loginInProgress = false;
+          go('dashboard.html');
+        });
+      })
+      .catch(function(e) {
+        _loginInProgress = false;
+        err('err-login', AUTH_ERRORS[e.code] || 'Sign-in failed. Try again.');
+        setLoading('btn-login', false, 'Sign In →');
+      });
+  }
+
+  // ── Register ─────────────────────────────────────────
+  function cleanText(v) { return (v || '').replace(/\s+/g, ' ').trim(); }
+  function looksLikeValidName(v) { return /^[A-Za-z][A-Za-z'\-. ]{1,59}$/.test(v); }
+  function cleanUniversity(v) {
+    var u = cleanText(v).replace(/[^A-Za-z0-9 .&'\-]/g, '');
+    return u || 'University';
+  }
+
+  function doRegister() {
+    clearErr('err-register');
+    var name  = cleanText(document.getElementById('reg-name').value);
+    var email = cleanText(document.getElementById('reg-email').value).toLowerCase();
+    var pw    = document.getElementById('reg-pw').value;
+    var tosCheck = document.getElementById('tos-check');
+    document.getElementById('reg-name').value = name;
+    document.getElementById('reg-email').value = email;
+    if (!name || !email || !pw) { err('err-register', 'Please fill in all fields.'); return; }
+    if (!looksLikeValidName(name)) { err('err-register', 'Please enter a valid full name.'); return; }
+    if (!tosCheck.checked) { err('err-register', 'Please read and accept the Terms of Service to continue.'); return; }
+    if (!email.endsWith('@umb.edu')) { err('err-register', 'PointSwap is for UMass Boston students only. Please use your @umb.edu email.'); return; }
+    if (pw.length < 6)            { err('err-register', 'Password must be at least 6 characters.'); return; }
+    setLoading('btn-register', true, 'Create Account →');
+    _loginInProgress = true;
+    auth.createUserWithEmailAndPassword(email, pw)
+      .then(function(result) {
+        var user = result.user;
+        var domainMap = {
+          'umb.edu': 'UMass Boston', 'umass.edu': 'UMass Amherst',
+          'bc.edu': 'Boston College', 'bu.edu': 'Boston University',
+          'neu.edu': 'Northeastern University', 'mit.edu': 'MIT',
+          'harvard.edu': 'Harvard University', 'tufts.edu': 'Tufts University',
+          'suffolk.edu': 'Suffolk University', 'simmons.edu': 'Simmons University',
+          'emmanuel.edu': 'Emmanuel College', 'mcphs.edu': 'MCPHS University',
+        };
+        var domain = email.split('@')[1];
+        var university = cleanUniversity(domainMap[domain] || domain.replace('.edu','').replace(/\./g,' '));
+        return db.collection('users').doc(user.uid).set({
+          name: name, email: email, university: university,
+          provider: 'email',
+          avgRating: 0, ratingCount: 0, totalSold: 0, totalBought: 0,
+          createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+          lastLogin: firebase.firestore.FieldValue.serverTimestamp()
+        }).then(function() {
+          _loginInProgress = false;
+          go('dashboard.html');
+        });
+      })
+      .catch(function(e) {
+        _loginInProgress = false;
+        err('err-register', AUTH_ERRORS[e.code] || 'Registration failed. Try again.');
+        setLoading('btn-register', false, 'Create Account →');
+      });
+  }
+
+  // ── Verify screen ─────────────────────────────────────
+  function showVerifyScreen(email) {
+    // Reset the sign-in button so it's not stuck in loading when user comes back
+    setLoading('btn-login', false, 'Sign In →');
+    document.getElementById('verify-email-addr').textContent = email;
+    document.querySelector('.auth-content').style.display = 'none';
+    document.getElementById('verify-screen').style.display = 'flex';
+  }
+
+  var _resendCooldown = false;
+  var _pendingEmail = '';
+  var _pendingPw    = ''; // stored temporarily to re-auth for resend
+
+  function resendVerification() {
+    if (_resendCooldown) return;
+    var btn = document.getElementById('btn-resend');
+    btn.disabled = true;
+    btn.textContent = 'Sending…';
+
+    // Get current user — may still be signed in momentarily after register
+    var user = auth.currentUser;
+    if (user && !user.emailVerified) {
+      user.sendEmailVerification()
+        .then(function() {
+          btn.textContent = 'Sent! Check your inbox (and spam folder).';
+          btn.style.color = '#065f46';
+          _resendCooldown = true;
+          setTimeout(function() {
+            btn.disabled = false;
+            btn.textContent = 'Resend verification email';
+            btn.style.color = '';
+            _resendCooldown = false;
+          }, 60000);
+        })
+        .catch(function(e) {
+          btn.disabled = false;
+          if (e.code === 'auth/too-many-requests') {
+            btn.textContent = 'Too many attempts — wait a few minutes.';
+          } else {
+            btn.textContent = 'Failed to send — try signing in again.';
+          }
+          setTimeout(function() { btn.textContent = 'Resend verification email'; }, 4000);
+        });
+    } else {
+      // User session expired — tell them to go back and sign in to trigger a fresh email
+      btn.disabled = false;
+      btn.textContent = 'Session expired — please sign in again to resend.';
+      setTimeout(function() { btn.textContent = 'Resend verification email'; }, 4000);
+    }
+  }
+
+  function backToLogin() {
+    auth.signOut(); // sign out unverified user when they go back
+    document.getElementById('verify-screen').style.display = 'none';
+    document.querySelector('.auth-content').style.display = 'flex';
+    switchTab('login');
+  }
+
+  // ── Toast ─────────────────────────────────────────────
+  function toast(msg, type) {
+    var t = document.createElement('div');
+    t.className = 'toast ' + (type || '');
+    t.textContent = msg;
+    document.getElementById('toasts').appendChild(t);
+    setTimeout(function() { t.remove(); }, 4500);
+  }
+
+  // ── Enter key ────────────────────────────────────────
+
+  function showTos(e) {
+    if (e) e.preventDefault();
+    document.getElementById('tos-modal').classList.add('open');
+  }
+  function closeTos() {
+    document.getElementById('tos-modal').classList.remove('open');
+  }
+  function acceptTos() {
+    document.getElementById('tos-check').checked = true;
+    document.getElementById('tos-modal').classList.remove('open');
+  }
+  document.addEventListener('DOMContentLoaded', function() {
+    var modal = document.getElementById('tos-modal');
+    if (modal) {
+      modal.addEventListener('click', function(e) {
+        if (e.target === modal) closeTos();
+      });
+    }
+  });
+
+  document.addEventListener('keydown', function(e) {
+    if (e.key !== 'Enter') return;
+    if (document.getElementById('form-login').classList.contains('active')) doLogin();
+    else doRegister();
+  });
+</script>
+</body>
+</html>

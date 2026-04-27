@@ -1,0 +1,113 @@
+/**
+ * push-notifications.js
+ * ─────────────────────────────────────────────────────
+ * Handles browser push notifications using the Web
+ * Notifications API. Shows popups when users receive
+ * new messages or when their request is accepted.
+ *
+ * Works when the browser is open (any tab).
+ * Clicking a notification navigates to the right page.
+ */
+
+const APP_NAME = 'PointSwap';
+const ICON_URL  = null; // set to a logo image URL if you have one
+
+// ── Permission ────────────────────────────────────────
+
+/**
+ * Request notification permission if not already granted.
+ * Call this after the user logs in.
+ * Returns true if permission is granted.
+ */
+export async function requestNotificationPermission() {
+  if (!('Notification' in window)) return false; // browser doesn't support it
+  if (Notification.permission === 'granted')  return true;
+  if (Notification.permission === 'denied')   return false;
+
+  const result = await Notification.requestPermission();
+  return result === 'granted';
+}
+
+export function notificationsEnabled() {
+  return 'Notification' in window && Notification.permission === 'granted';
+}
+
+// ── Show a notification ───────────────────────────────
+
+function show(title, body, url) {
+  if (!notificationsEnabled()) return;
+
+  const opts = {
+    body,
+    icon:   ICON_URL || undefined,
+    badge:  ICON_URL || undefined,
+    tag:    url, // deduplicate: same URL = replace old notification
+    renotify: true,
+    requireInteraction: false,
+  };
+
+  try {
+    const n = new Notification(title, opts);
+    n.onclick = () => {
+      window.focus();
+      if (url) window.location.href = url;
+      n.close();
+    };
+    // Auto-close after 6 seconds
+    setTimeout(() => n.close(), 6000);
+  } catch(e) {
+    console.warn('Notification failed:', e);
+  }
+}
+
+// ── Public notification functions ─────────────────────
+
+/**
+ * Notify user of a new chat message.
+ * @param {string} fromName - sender's name
+ * @param {string} messagePreview - first ~60 chars of the message
+ * @param {string} conversationId - used to deep-link to the right convo
+ */
+export function notifyMessage(fromName, messagePreview, conversationId) {
+  const preview = messagePreview.length > 60
+    ? messagePreview.slice(0, 60) + '…'
+    : messagePreview;
+  // Tag = conversationId so multiple messages from same person collapse into one popup
+  const opts = {
+    body: preview,
+    tag:  `msg-${conversationId}`,  // replaces previous notification from same convo
+    renotify: false,                // don't re-vibrate/sound if replacing
+  };
+  if (!notificationsEnabled()) return;
+  try {
+    const n = new Notification(`New message from ${fromName}`, opts);
+    n.onclick = () => { window.focus(); window.location.href = 'messages.html?cid=' + encodeURIComponent(conversationId); n.close(); };
+    setTimeout(() => n.close(), 6000);
+  } catch(e) { console.warn('Notification failed:', e); }
+}
+
+/**
+ * Notify buyer that their meal request was accepted.
+ * @param {string} sellerName
+ * @param {string} diningHall
+ */
+export function notifyRequestAccepted(sellerName, diningHall) {
+  show(
+    'Your request was accepted!',
+    `${sellerName} accepted your meal at ${diningHall}. Open Messages to coordinate.`,
+    'messages.html'
+  );
+}
+
+/**
+ * Notify seller of a new incoming meal request.
+ * @param {string} buyerName
+ * @param {string} diningHall
+ */
+export function notifyNewRequest(buyerName, diningHall) {
+  show(
+    'New meal request',
+    `${buyerName} requested your listing at ${diningHall}.`,
+    'profile.html'
+  );
+}

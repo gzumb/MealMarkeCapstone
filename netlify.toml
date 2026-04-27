@@ -1,0 +1,232 @@
+/**
+ * nav-notifications.js
+ * 
+ * Imported on every protected page. Sets up real-time
+ * Firestore listeners and updates the nav badge counts.
+ *
+ * Badges tracked:
+ * • Messages link → unread conversations
+ * (last message not sent by current user
+ * and arrived after localStorage read timestamp)
+ * • Profile avatar → pending incoming requests + accepted outgoing requests
+ */
+
+import { db } from './firebase-config.js';
+import { requestNotificationPermission, notifyMessage, notifyRequestAccepted, notifyNewRequest } from './push-notifications.js';
+import {
+ collection, query, where, onSnapshot, doc, updateDoc, serverTimestamp
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+// Inject badge styles once 
+const STYLE = document.createElement('style');
+STYLE.textContent = `
+ .nav-badge {
+ display: inline-flex; align-items: center; justify-content: center;
+ min-width: 18px; height: 18px;
+ background: #e53e3e; color: #fff;
+ border-radius: 999px;
+ font-size: .65rem; font-weight: 800;
+ padding: 0 5px; margin-left: 5px;
+ line-height: 1;
+ vertical-align: middle;
+ box-shadow: 0 1px 3px rgba(0,0,0,.25);
+ animation: badgePop .2s cubic-bezier(.36,1.6,.5,1) both;
+ }
+ @keyframes badgePop {
+ from { transform: scale(0); }
+ to { transform: scale(1); }
+ }
+ .nav-avatar-wrap { position: relative; display: inline-flex; }
+ .nav-badge-dot {
+ position: absolute; top: -2px; right: -2px;
+ width: 11px; height: 11px;
+ background: #e53e3e; border-radius: 50%;
+ border: 2px solid #005a8b; /* match nav bg */
+ animation: badgePop .2s cubic-bezier(.36,1.6,.5,1) both;
+ }
+`;
+document.head.appendChild(STYLE);
+
+// localStorage helpers for "last read" timestamps 
+function getReadAt(convId) {
+ return parseInt(localStorage.getItem(`ps_read_${convId}`) || '0', 10);
+}
+export function markConvRead(convId) {
+ localStorage.setItem(`ps_read_${convId}`, Date.now().toString());
+ if (_bc) _bc.postMessage({ type:'read', convId });
+ refreshMsgBadge();
+}
+
+// Internal state 
+let _conversations = [];
+let _userId = null;
+
+let _pendingIncoming = 0; // requests where I am seller & status=pending
+let _acceptedOutgoing = 0; // requests where I am buyer & status=accepted
+let _seenConversationMeta = new Map();
+let _seenAcceptedRequests = new Set();
+let _seenIncomingRequests = new Set();
+let _conversationsBootstrapped = false;
+let _incomingBootstrapped = false;
+let _acceptedBootstrapped = false;
+const _bc = ('BroadcastChannel' in window) ? new BroadcastChannel('pointswap-notifications') : null;
+
+// Bootstrap — call this once auth is resolved 
+export function initNotifications(userId) {
+ _userId = userId;
+ requestNotificationPermission().catch(() => {});
+ window.addEventListener('storage', e => {
+  if (e.key && (e.key.startsWith('ps_read_') || e.key.startsWith('ps_ack_req_'))) {
+   refreshMsgBadge();
+   refreshProfileBadge();
+  }
+ });
+ if (_bc) {
+  _bc.onmessage = (e) => {
+   if (e?.data?.type === 'read') refreshMsgBadge();
+   if (e?.data?.type === 'ack') refreshProfileBadge();
+  };
+ }
+ listenConversations();
+ listenRequests();
+}
+
+// Conversations listener 
+function listenConversations() {
+ const q = query(
+ collection(db, 'conversations'),
+ where('participants', 'array-contains', _userId)
+ );
+ onSnapshot(q, snap => {
+ const next = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+ for (const c of next) {
+  const prev = _seenConversationMeta.get(c.id);
+  const lastMs = c.lastMessageAt?.toMillis ? c.lastMessageAt.toMillis() : 0;
+  const readMs = getReadAt(c.id);
+  const isIncoming = c.lastSenderId && c.lastSenderId !== _userId;
+  if (_conversationsBootstrapped && prev && lastMs > prev.lastMs && isIncoming && lastMs > readMs) {
+   const fromId = c.participants?.find?.(p => p !== _userId) || '';
+   const fromName = c.participantNames?.[fromId] || 'Someone';
+   notifyMessage(fromName, c.lastMessage || 'Open Messages to reply.', c.id);
+  }
+  _seenConversationMeta.set(c.id, { lastMs });
+ }
+ _conversationsBootstrapped = true;
+ _conversations = next;
+ refreshMsgBadge();
+ });
+}
+
+function refreshMsgBadge() {
+ if (!_userId || !_conversations.length) { setBadge('msgs', 0); return; }
+ let unread = 0;
+ for (const c of _conversations) {
+ if (!c.lastMessageAt) continue;
+ // Skip if I sent the last message
+ if (c.lastSenderId === _userId) continue;
+ const lastMsgMs = c.lastMessageAt.toMillis ? c.lastMessageAt.toMillis() : 0;
+ const readMs = getReadAt(c.id);
+ if (lastMsgMs > readMs) unread++;
+ }
+ setBadge('msgs', unread);
+}
+
+// Requests listener 
+function listenRequests() {
+ // Incoming (I am seller, pending)
+ const qIn = query(
+ collection(db, 'requests'),
+ where('sellerId', '==', _userId),
+ where('status', '==', 'pending')
+ );
+ onSnapshot(qIn, snap => {
+ _pendingIncoming = snap.size;
+ snap.docs.forEach(d => {
+  const alreadySeen = _seenIncomingRequests.has(d.id);
+  _seenIncomingRequests.add(d.id);
+  if (!_incomingBootstrapped || alreadySeen) return;
+  const r = d.data();
+  if (r.buyerName && r.diningHall) notifyNewRequest(r.buyerName, r.diningHall);
+ });
+ _incomingBootstrapped = true;
+ refreshProfileBadge();
+ });
+
+ // Outgoing (I am buyer, just got accepted)
+ const qOut = query(
+ collection(db, 'requests'),
+ where('buyerId', '==', _userId),
+ where('status', '==', 'accepted')
+ );
+ onSnapshot(qOut, snap => {
+ // Only count ones the buyer hasn't acknowledged yet
+ let count = 0;
+ snap.docs.forEach(d => {
+  const r = d.data();
+  const ackKey = `ps_ack_req_${d.id}`;
+  if (!localStorage.getItem(ackKey)) count++;
+  const alreadySeen = _seenAcceptedRequests.has(d.id);
+  _seenAcceptedRequests.add(d.id);
+  if (_acceptedBootstrapped && !alreadySeen) {
+   notifyRequestAccepted(r.sellerName || 'A seller', r.diningHall || 'your listing');
+  }
+ });
+ _acceptedBootstrapped = true;
+ _acceptedOutgoing = count;
+ refreshProfileBadge();
+ });
+}
+
+function refreshProfileBadge() {
+ const total = _pendingIncoming + _acceptedOutgoing;
+ setDot('profile', total > 0);
+}
+
+// Expose so profile.html can ack accepted requests
+export function ackAcceptedRequest(reqId) {
+ localStorage.setItem(`ps_ack_req_${reqId}`, '1');
+ if (_bc) _bc.postMessage({ type:'ack', reqId });
+ refreshProfileBadge();
+}
+
+// DOM helpers 
+function setBadge(id, count) {
+ let el = document.getElementById(`nav-notif-${id}`);
+ if (!el) {
+ // Find the Messages nav link and inject badge span
+ const link = document.querySelector(`a[href="messages.html"].nav-link`);
+ if (!link) return;
+ el = document.createElement('span');
+ el.id = `nav-notif-${id}`;
+ el.className = 'nav-badge';
+ link.appendChild(el);
+ }
+ if (count > 0) {
+ el.textContent = count > 99 ? '99+' : count;
+ el.style.display = 'inline-flex';
+ // re-trigger animation
+ el.style.animation = 'none';
+ el.offsetHeight; // reflow
+ el.style.animation = '';
+ } else {
+ el.style.display = 'none';
+ }
+}
+
+function setDot(id, visible) {
+ let dot = document.getElementById(`nav-notif-dot-${id}`);
+ if (!dot) {
+ // Wrap the avatar in a relative-positioned span and add dot
+ const avatar = document.getElementById('nav-avatar');
+ if (!avatar) return;
+ const wrap = document.createElement('span');
+ wrap.className = 'nav-avatar-wrap';
+ avatar.parentNode.insertBefore(wrap, avatar);
+ wrap.appendChild(avatar);
+ dot = document.createElement('span');
+ dot.id = `nav-notif-dot-${id}`;
+ dot.className = 'nav-badge-dot';
+ wrap.appendChild(dot);
+ }
+ dot.style.display = visible ? 'block' : 'none';
+}

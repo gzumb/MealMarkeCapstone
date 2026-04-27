@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <!-- Performance: preconnect to external resources -->
+  <link rel="preconnect" href="https://www.gstatic.com" crossorigin>
+  <link rel="preconnect" href="https://firestore.googleapis.com" crossorigin>
+  <link rel="preconnect" href="https://identitytoolkit.googleapis.com" crossorigin>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;0,8..60,700;1,8..60,400&family=Source+Sans+3:wght@300;400;600;700;900&display=swap">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;0,8..60,700;1,8..60,400&family=Source+Sans+3:wght@300;400;600;700;900&display=swap">
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
+  <!-- Disable Cloudflare email obfuscation -->
+  <meta name="cf-2fa-verify" content="no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Welcome to PointSwap</title>
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    body { background: var(--bg-alt); min-height: 100vh; display: flex; flex-direction: column; }
+
+    .onboard-wrap {
+      flex: 1; display: flex; align-items: center; justify-content: center;
+      padding: 2rem;
+    }
+
+    .onboard-card {
+      background: #fff;
+      border-radius: var(--r-lg);
+      width: 100%; max-width: 560px;
+      box-shadow: var(--shadow-lg);
+      overflow: hidden;
+    }
+
+    /* Top banner */
+    .onboard-banner {
+      background: var(--umb-blue-dark);
+      padding: 2rem 2.5rem;
+      position: relative;
+    }
+    .onboard-banner::after {
+      content: '';
+      position: absolute; bottom: 0; left: 0; right: 0;
+      height: 4px;
+      background: linear-gradient(90deg, var(--umb-blue), var(--umb-gold), var(--umb-red));
+    }
+    .onboard-step-pills {
+      display: flex; gap: .4rem; margin-bottom: 1.5rem;
+    }
+    .step-pill {
+      height: 4px; border-radius: 2px;
+      background: rgba(255,255,255,.25);
+      flex: 1; transition: background .3s;
+    }
+    .step-pill.active { background: var(--umb-gold); }
+    .step-pill.done   { background: rgba(255,255,255,.6); }
+
+    .onboard-eyebrow {
+      font-size: .7rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: .1em; color: var(--umb-gold); margin-bottom: .5rem;
+    }
+    .onboard-title {
+      font-family: 'Source Serif 4', Georgia, serif;
+      font-size: 1.6rem; color: #fff; font-weight: 700; line-height: 1.2;
+    }
+
+    /* Step body */
+    .onboard-body { padding: 2rem 2.5rem; }
+
+    .step-panel { display: none; }
+    .step-panel.active { display: block; }
+
+    .step-desc {
+      color: var(--muted); font-size: .9rem; line-height: 1.7;
+      margin-bottom: 1.75rem;
+    }
+
+    /* How-it-works steps */
+    .how-steps { display: flex; flex-direction: column; gap: .85rem; margin-bottom: 1.75rem; }
+    .how-step {
+      display: flex; gap: 1rem; align-items: flex-start;
+      padding: .9rem 1rem;
+      background: var(--bg-alt); border-radius: var(--r);
+      border: 1px solid var(--border);
+      border-left: 3px solid var(--umb-blue);
+    }
+    .how-step-num {
+      width: 28px; height: 28px; border-radius: 50%;
+      background: var(--umb-blue); color: #fff;
+      display: flex; align-items: center; justify-content: center;
+      font-size: .78rem; font-weight: 800; flex-shrink: 0;
+    }
+    .how-step-title { font-size: .875rem; font-weight: 700; color: var(--umb-blue-dark); }
+    .how-step-desc  { font-size: .78rem; color: var(--muted); margin-top: .15rem; line-height: 1.5; }
+
+    /* Role chooser */
+    .role-cards { display: grid; grid-template-columns: 1fr 1fr; gap: .85rem; margin-bottom: 1.75rem; }
+    .role-card {
+      padding: 1.25rem; border-radius: var(--r);
+      border: 2px solid var(--border); cursor: pointer;
+      transition: all .15s; text-align: center;
+    }
+    .role-card:hover { border-color: var(--umb-blue); }
+    .role-card.selected { border-color: var(--umb-blue); background: var(--umb-blue-lt); }
+    .role-card-icon {
+      width: 44px; height: 44px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      margin: 0 auto .75rem;
+    }
+    .role-card-icon svg { width: 22px; height: 22px; }
+    .role-sell .role-card-icon { background: var(--umb-blue-lt); color: var(--umb-blue); }
+    .role-buy  .role-card-icon { background: var(--umb-gold-lt); color: #7a5c00; }
+    .role-card-title { font-size: .9rem; font-weight: 700; color: var(--umb-blue-dark); margin-bottom: .25rem; }
+    .role-card-desc  { font-size: .75rem; color: var(--muted); line-height: 1.5; }
+
+    /* Rules step */
+    .rules-list { display: flex; flex-direction: column; gap: .65rem; margin-bottom: 1.75rem; }
+    .rule-item {
+      display: flex; gap: .85rem; align-items: flex-start;
+      font-size: .875rem; color: var(--text-md);
+    }
+    .rule-check {
+      width: 20px; height: 20px; border-radius: 50%;
+      background: #d1fae5; border: 1.5px solid #6ee7b7;
+      display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+      margin-top: .1rem;
+    }
+    .rule-check svg { width: 11px; height: 11px; color: #065f46; }
+
+    /* Nav buttons */
+    .onboard-nav { display: flex; justify-content: space-between; align-items: center; }
+    .step-counter { font-size: .78rem; color: var(--muted); font-weight: 600; }
+  </style>
+</head>
+<body>
+
+<div id="auth-loading" style="position:fixed;inset:0;background:var(--bg-alt);display:flex;align-items:center;justify-content:center;z-index:999;">
+  <div style="text-align:center;">
+    <div class="spinner" style="width:32px;height:32px;border-width:3px;border-color:rgba(0,90,139,.2);border-top-color:var(--umb-blue);margin:0 auto 1rem;"></div>
+    <p style="color:var(--muted);font-size:.875rem;">Loading…</p>
+  </div>
+</div>
+<div class="onboard-wrap">
+  <div class="onboard-card">
+
+    <div class="onboard-banner">
+      <div class="onboard-step-pills">
+        <div class="step-pill active" id="pill-0"></div>
+        <div class="step-pill"        id="pill-1"></div>
+        <div class="step-pill"        id="pill-2"></div>
+        <div class="step-pill"        id="pill-3"></div>
+      </div>
+      <div class="onboard-eyebrow" id="step-eyebrow">Welcome</div>
+      <h1 class="onboard-title"   id="step-title">You're all set, <span id="user-first-name">there</span>.</h1>
+    </div>
+
+    <div class="onboard-body">
+
+      <!-- Step 0: Welcome -->
+      <div class="step-panel active" id="step-0">
+        <p class="step-desc">
+          PointSwap is a UMass Boston student platform for sharing unused dining points.
+          Sellers convert expiring points into value. Buyers get affordable meals. Everyone wins.
+        </p>
+        <div class="how-steps">
+          <div class="how-step">
+            <div class="how-step-num">1</div>
+            <div>
+              <div class="how-step-title">Post or find a meal</div>
+              <div class="how-step-desc">Sellers post their available dining points with a discounted price. Buyers browse and filter by location and time.</div>
+            </div>
+          </div>
+          <div class="how-step">
+            <div class="how-step-num">2</div>
+            <div>
+              <div class="how-step-title">Request and coordinate</div>
+              <div class="how-step-desc">Send a request to the seller. Once accepted, use the built-in chat to agree on a meetup time.</div>
+            </div>
+          </div>
+          <div class="how-step">
+            <div class="how-step-num">3</div>
+            <div>
+              <div class="how-step-title">Meet at the dining hall</div>
+              <div class="how-step-desc">The seller swipes their points. The buyer pays the agreed amount in cash or Venmo. Done.</div>
+            </div>
+          </div>
+        </div>
+        <div class="onboard-nav">
+          <span class="step-counter">Step 1 of 4</span>
+          <button class="btn btn-primary" onclick="nextStep()">Next →</button>
+        </div>
+      </div>
+
+      <!-- Step 1: Role -->
+      <div class="step-panel" id="step-1">
+        <p class="step-desc">How do you plan to use PointSwap? You can always do both — this just helps us point you in the right direction.</p>
+        <div class="role-cards">
+          <div class="role-card role-sell" id="role-sell" onclick="selectRole('sell')">
+            <div class="role-card-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+              </svg>
+            </div>
+            <div class="role-card-title">I want to sell</div>
+            <div class="role-card-desc">I have extra dining points and want to convert them before they expire.</div>
+          </div>
+          <div class="role-card role-buy" id="role-buy" onclick="selectRole('buy')">
+            <div class="role-card-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/>
+              </svg>
+            </div>
+            <div class="role-card-title">I want to buy</div>
+            <div class="role-card-desc">I want to find affordable meals from students with extra dining points.</div>
+          </div>
+        </div>
+        <div class="onboard-nav">
+          <button class="btn btn-outline btn-sm" onclick="prevStep()">Back</button>
+          <span class="step-counter">Step 2 of 4</span>
+          <button class="btn btn-primary" onclick="nextStep()">Next →</button>
+        </div>
+      </div>
+
+      <!-- Step 2: Rules -->
+      <div class="step-panel" id="step-2">
+        <p class="step-desc">A few ground rules to keep PointSwap safe and fair for everyone.</p>
+        <div class="rules-list">
+          <div class="rule-item">
+            <div class="rule-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></div>
+            <span><strong>All exchanges happen in person</strong> at a campus dining hall. Never share payment details online.</span>
+          </div>
+          <div class="rule-item">
+            <div class="rule-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></div>
+            <span><strong>Only verified UMass Boston students</strong> can use this platform. Do not share your account.</span>
+          </div>
+          <div class="rule-item">
+            <div class="rule-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></div>
+            <span><strong>Prices must be discounted</strong> — the whole point is saving money. Don't list at or above face value.</span>
+          </div>
+          <div class="rule-item">
+            <div class="rule-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></div>
+            <span><strong>Rate every exchange</strong> — ratings keep the community trustworthy for everyone.</span>
+          </div>
+          <div class="rule-item">
+            <div class="rule-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></div>
+            <span><strong>Cancel listings you can no longer fulfill</strong> — don't leave buyers hanging.</span>
+          </div>
+        </div>
+        <div class="onboard-nav">
+          <button class="btn btn-outline btn-sm" onclick="prevStep()">Back</button>
+          <span class="step-counter">Step 3 of 4</span>
+          <button class="btn btn-primary" onclick="nextStep()">I agree →</button>
+        </div>
+      </div>
+
+      <!-- Step 3: Ready -->
+      <div class="step-panel" id="step-3">
+        <p class="step-desc">
+          You're ready to go. Here's what to do first based on what you're looking to do:
+        </p>
+        <div class="how-steps">
+          <div class="how-step" id="cta-sell" style="display:none;">
+            <div class="how-step-num">→</div>
+            <div>
+              <div class="how-step-title">Post your first listing</div>
+              <div class="how-step-desc">Head to "Post a Meal" and enter the dining hall, meal value, your price, and when you're available.</div>
+            </div>
+          </div>
+          <div class="how-step" id="cta-buy" style="display:none;">
+            <div class="how-step-num">→</div>
+            <div>
+              <div class="how-step-title">Browse available meals</div>
+              <div class="how-step-desc">The Browse page shows all active listings. Filter by location or time to find something that works for you.</div>
+            </div>
+          </div>
+          <div class="how-step" id="cta-both">
+            <div class="how-step-num">→</div>
+            <div>
+              <div class="how-step-title">Explore the app</div>
+              <div class="how-step-desc">Browse available meals, post your own listings, and chat with other students to coordinate meetups.</div>
+            </div>
+          </div>
+        </div>
+        <div class="onboard-nav">
+          <button class="btn btn-outline btn-sm" onclick="prevStep()">Back</button>
+          <span class="step-counter">Step 4 of 4</span>
+          <button class="btn btn-accent" onclick="finish()">Go to PointSwap →</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script type="module">
+  import { auth, db } from './firebase-config.js';
+  import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+  import { doc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+  let currentStep = 0;
+  let selectedRole = null;
+  let me = null;
+
+  const TITLES = [
+    ['Welcome', 'You\'re all set, <span id="user-first-name"></span>.'],
+    ['Your Role', 'How will you use PointSwap?'],
+    ['Community Rules', 'Read before you begin.'],
+    ['You\'re Ready', 'Let\'s get started.'],
+  ];
+
+  onAuthStateChanged(auth, async u => {
+    if (!u) return (window.location.href = 'index.html');
+    // @umb.edu enforced at registration — no email verification needed
+    me = u;
+    document.getElementById('auth-loading').style.display = 'none';
+    const snap = await getDoc(doc(db, 'users', u.uid));
+    if (snap.exists()) {
+      const data = snap.data();
+      // If already onboarded, skip to dashboard
+      if (data.onboarded) return (window.location.href = 'dashboard.html');
+      const first = data.name.split(' ')[0];
+      document.querySelectorAll('#user-first-name').forEach(el => el.textContent = first);
+    }
+  });
+
+  window.nextStep = () => {
+    if (currentStep < 3) { currentStep++; render(); }
+  };
+  window.prevStep = () => {
+    if (currentStep > 0) { currentStep--; render(); }
+  };
+
+  window.selectRole = (role) => {
+    selectedRole = role;
+    document.getElementById('role-sell').classList.toggle('selected', role === 'sell');
+    document.getElementById('role-buy').classList.toggle('selected',  role === 'buy');
+    // Show correct CTA on step 3
+    document.getElementById('cta-sell').style.display = role === 'sell' ? 'flex' : 'none';
+    document.getElementById('cta-buy').style.display  = role === 'buy'  ? 'flex' : 'none';
+    document.getElementById('cta-both').style.display = (!role)          ? 'flex' : 'none';
+  };
+
+  window.finish = async () => {
+    if (me) {
+      try {
+        await updateDoc(doc(db, 'users', me.uid), {
+          onboarded: true,
+          preferredRole: selectedRole || 'both'
+        });
+      } catch(e) { console.warn('Could not save onboarding state:', e); }
+    }
+    window.location.href = 'dashboard.html';
+  };
+
+  function render() {
+    // Panels
+    document.querySelectorAll('.step-panel').forEach((p, i) =>
+      p.classList.toggle('active', i === currentStep));
+    // Pills
+    document.querySelectorAll('.step-pill').forEach((p, i) => {
+      p.classList.remove('active', 'done');
+      if (i === currentStep) p.classList.add('active');
+      else if (i < currentStep) p.classList.add('done');
+    });
+    // Banner text
+    const [eyebrow, title] = TITLES[currentStep];
+    document.getElementById('step-eyebrow').textContent = eyebrow;
+    document.getElementById('step-title').innerHTML = title;
+    // Re-inject name if on step 0
+    if (currentStep === 0 && me) {
+      getDoc(doc(db, 'users', me.uid)).then(s => {
+        const first = s.data()?.name.split(' ')[0] || '';
+        const el = document.getElementById('user-first-name');
+        if (el) el.textContent = first + '.';
+      });
+    }
+  }
+
+  function applyAvatar(id, user) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const init = ((user?.name || '?')[0] || '?').toUpperCase();
+    if (user?.profilePhoto) {
+      el.textContent = '';
+      el.style.backgroundImage = "url('" + user.profilePhoto + "')";
+      el.classList.add('has-photo');
+    } else {
+      el.textContent = init;
+      el.style.backgroundImage = '';
+      el.classList.remove('has-photo');
+    }
+  }
+
+</script>
+
+<script>
+function toggleNav() {
+  var btn    = document.getElementById('hamburger');
+  var drawer = document.getElementById('mobile-drawer');
+  var open   = drawer.classList.toggle('open');
+  btn.classList.toggle('open', open);
+}
+// Close drawer when clicking outside
+document.addEventListener('click', function(e) {
+  var drawer = document.getElementById('mobile-drawer');
+  var btn    = document.getElementById('hamburger');
+  if (drawer && !drawer.contains(e.target) && !btn.contains(e.target)) {
+    drawer.classList.remove('open');
+    btn.classList.remove('open');
+  }
+});
+// Sync message badge to mobile drawer
+function syncMobileBadge() {
+  var desktop = document.querySelector('#nav-notif-msgs');
+  var mob     = document.getElementById('mob-msg-badge');
+  if (!desktop || !mob) return;
+  var count = desktop.textContent;
+  if (count && desktop.style.display !== 'none') {
+    mob.textContent = count; mob.style.display = 'inline';
+  } else {
+    mob.style.display = 'none';
+  }
+}
+setInterval(syncMobileBadge, 1000);
+</script>
+
+<!-- Floating feedback button -->
+<a href="https://docs.google.com/forms/d/e/1FAIpQLSdUyonvfvlpv7T6oQ2jBR94P2aSyiAn9H2W5nlcPUN65PwCfQ/viewform?usp=publish-editor" target="_blank"
+  style="position:fixed;bottom:1.5rem;left:1.5rem;z-index:200;
+    background:var(--umb-blue);color:#fff;
+    padding:.5rem 1rem;border-radius:99px;
+    font-size:.75rem;font-weight:700;text-decoration:none;
+    box-shadow:0 2px 12px rgba(0,50,90,.25);
+    display:flex;align-items:center;gap:.4rem;
+    transition:all .15s;"
+  onmouseover="this.style.background='var(--umb-blue-dark)';this.style.transform='translateY(-2px)'"
+  onmouseout="this.style.background='var(--umb-blue)';this.style.transform=''"
+  title="Share your feedback about PointSwap">
+  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+  </svg>
+  Feedback
+</a>
+</body>
+</html>

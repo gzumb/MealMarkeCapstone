@@ -1,3 +1,165 @@
-<svg width="180" height="180" viewBox="0 0 180 180" fill="none" xmlns="http://www.w3.org/2000/svg">
-<rect width="180" height="180" rx="36" fill="#FF3C00"/>
-</svg>
+/**
+ * email-notifications.js
+ * 
+ * Writes documents to the /mail Firestore collection,
+ * which the Firebase "Trigger Email" extension picks up
+ * and sends as real emails.
+ *
+ * SETUP REQUIRED — see README.md for full instructions.
+ */
+
+import { db } from './firebase-config.js';
+import { collection, addDoc, serverTimestamp }
+ from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+const APP_URL = window.location.origin; // e.g. http://localhost:8000
+const APP_NAME = 'PointSwap';
+
+// Shared email template wrapper 
+function buildHtml(bodyHtml) {
+ return `
+<!DOCTYPE html>
+<html>
+<head>
+ <meta charset="UTF-8">
+ <meta name="viewport" content="width=device-width,initial-scale=1">
+ <style>
+ body { margin:0; padding:0; background:#f4f7fa; font-family: Arial, sans-serif; }
+ .wrap { max-width:580px; margin:32px auto; background:#fff;
+ border-radius:8px; overflow:hidden;
+ box-shadow:0 2px 12px rgba(0,50,90,.12); }
+ .header {
+ background:#005a8b; padding:24px 32px;
+ display:flex; align-items:center; gap:12px;
+ }
+ .header-icon { font-size:1.5rem; }
+ .header-title { color:#fff; font-size:1.15rem; font-weight:700; margin:0; }
+ .header-sub { color:rgba(255,255,255,.6); font-size:.75rem; margin:2px 0 0; }
+ .accent-bar { height:4px; background:linear-gradient(90deg,#005a8b,#c59217,#a33f1f); }
+ .body { padding:28px 32px; color:#1a1a1a; line-height:1.65; font-size:15px; }
+ .body h2 { font-size:1.2rem; color:#003f63; margin:0 0 12px; }
+ .cta-btn {
+ display:inline-block; margin:20px 0 8px;
+ background:#005a8b; color:#fff;
+ padding:11px 28px; border-radius:5px;
+ text-decoration:none; font-weight:700; font-size:.9rem;
+ }
+ .detail-box {
+ background:#f4f7fa; border-left:3px solid #c59217;
+ border-radius:4px; padding:12px 16px; margin:16px 0;
+ font-size:.875rem; color:#444;
+ }
+ .footer {
+ border-top:1px solid #e8edf2; padding:16px 32px;
+ font-size:.72rem; color:#9ca3af; text-align:center;
+ }
+ .footer a { color:#005a8b; text-decoration:none; }
+ </style>
+</head>
+<body>
+ <div class="wrap">
+ <div class="header">
+ <span class="header-icon"></span>
+ <div>
+ <p class="header-title">PointSwap</p>
+ <p class="header-sub">UMass Boston Dining Exchange</p>
+ </div>
+ </div>
+ <div class="accent-bar"></div>
+ <div class="body">${bodyHtml}</div>
+ <div class="footer">
+ You're receiving this because you have a PointSwap account.<br>
+ <a href="${APP_URL}">Visit PointSwap</a> &nbsp;·&nbsp;
+ Questions? Reply to this email.
+ </div>
+ </div>
+</body>
+</html>`;
+}
+
+// Send helper 
+async function sendEmail(to, subject, bodyHtml) {
+ if (!to) return;
+ try {
+ await addDoc(collection(db, 'mail'), {
+ to,
+ message: {
+ subject: `[PointSwap] ${subject}`,
+ html: buildHtml(bodyHtml),
+ },
+ createdAt: serverTimestamp(),
+ });
+ } catch (e) {
+ // Non-fatal — badge notifications still work even if email fails
+ console.warn('Email notification failed:', e.message);
+ }
+}
+
+// Public notification functions 
+
+/**
+ * Called when a buyer sends a new chat message.
+ * Notifies the other participant.
+ */
+export async function notifyNewMessage({ toEmail, toName, fromName, diningHall, messagePreview }) {
+ await sendEmail(
+ toEmail,
+ `New message from ${fromName}`,
+ `
+ <h2>You have a new message </h2>
+ <p>Hi ${toName},</p>
+ <p><strong>${fromName}</strong> sent you a message about a meal at
+ <strong>${diningHall || 'a dining hall'}</strong>:</p>
+ <div class="detail-box">"${messagePreview}"</div>
+ <a class="cta-btn" href="${APP_URL}/messages.html">Open Messages →</a>
+ <p style="font-size:.8rem;color:#9ca3af;margin-top:8px;">
+ Reply directly in the PointSwap app to keep the conversation going.
+ </p>`
+ );
+}
+
+/**
+ * Called when a seller accepts a buyer's meal request.
+ * Notifies the buyer.
+ */
+export async function notifyRequestAccepted({ toEmail, toName, sellerName, diningHall, price }) {
+ await sendEmail(
+ toEmail,
+ `Your meal request was accepted! `,
+ `
+ <h2>Great news — your request was accepted! </h2>
+ <p>Hi ${toName},</p>
+ <p><strong>${sellerName}</strong> accepted your meal request. Here are the details:</p>
+ <div class="detail-box">
+ <strong>Location:</strong> ${diningHall}<br>
+ <strong>Price:</strong> $${parseFloat(price).toFixed(2)}
+ </div>
+ <p>Head to Messages to coordinate a meetup time with ${sellerName}.</p>
+ <a class="cta-btn" href="${APP_URL}/messages.html">Open Messages →</a>
+ <p style="font-size:.8rem;color:#9ca3af;margin-top:8px;">
+ Remember: payment happens in person at the dining hall.
+ </p>`
+ );
+}
+
+/**
+ * Called when a buyer submits a meal request.
+ * Notifies the seller.
+ */
+export async function notifyNewRequest({ toEmail, toName, buyerName, diningHall, price, message }) {
+ await sendEmail(
+ toEmail,
+ `New meal request from ${buyerName}`,
+ `
+ <h2>You have a new meal request </h2>
+ <p>Hi ${toName},</p>
+ <p><strong>${buyerName}</strong> has requested your meal listing:</p>
+ <div class="detail-box">
+ <strong>Location:</strong> ${diningHall}<br>
+ <strong>Price:</strong> $${parseFloat(price).toFixed(2)}
+ ${message ? `<br> <strong>Their note:</strong> "${message}"` : ''}
+ </div>
+ <p>Log in to accept or decline this request.</p>
+ <a class="cta-btn" href="${APP_URL}/profile.html">View Request →</a>`
+ );
+}

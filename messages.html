@@ -1,0 +1,705 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <!-- Performance: preconnect to external resources -->
+  <link rel="preconnect" href="https://www.gstatic.com" crossorigin>
+  <link rel="preconnect" href="https://firestore.googleapis.com" crossorigin>
+  <link rel="preconnect" href="https://identitytoolkit.googleapis.com" crossorigin>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;0,8..60,700;1,8..60,400&family=Source+Sans+3:wght@300;400;600;700;900&display=swap">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;0,8..60,700;1,8..60,400&family=Source+Sans+3:wght@300;400;600;700;900&display=swap">
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
+  <!-- Disable Cloudflare email obfuscation -->
+  <meta name="cf-2fa-verify" content="no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Meal Listing – PointSwap</title>
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    .detail-layout {
+      display: grid;
+      grid-template-columns: 1fr 340px;
+      gap: 2rem;
+      align-items: start;
+    }
+
+    /* Main listing card */
+    .listing-hero {
+      background: var(--umb-blue-dark);
+      border-radius: var(--r-lg) var(--r-lg) 0 0;
+      padding: 2rem;
+      position: relative;
+    }
+    .listing-hero::after {
+      content: '';
+      position: absolute; bottom: 0; left: 0; right: 0; height: 4px;
+      background: linear-gradient(90deg, var(--umb-blue), var(--umb-gold));
+    }
+    .listing-hero-hall {
+      font-family: 'Source Serif 4', Georgia, serif;
+      font-size: 1.5rem; color: #fff; font-weight: 700; margin-bottom: .35rem;
+    }
+    .listing-hero-meta { font-size: .875rem; color: rgba(255,255,255,.6); }
+
+    .listing-body-card {
+      background: #fff;
+      border: 1px solid var(--border);
+      border-top: none;
+      border-radius: 0 0 var(--r-lg) var(--r-lg);
+      padding: 1.75rem;
+    }
+
+    .price-row {
+      display: flex; align-items: baseline; gap: .85rem;
+      margin-bottom: 1.5rem; padding-bottom: 1.5rem;
+      border-bottom: 1px solid var(--border);
+    }
+    .price-big {
+      font-family: 'Source Serif 4', Georgia, serif;
+      font-size: 2.75rem; color: var(--umb-blue-dark); font-weight: 700;
+    }
+    .price-orig { font-size: 1rem; color: var(--muted); text-decoration: line-through; }
+    .price-save {
+      font-size: .75rem; font-weight: 700; color: #065f46;
+      background: #d1fae5; padding: .25rem .65rem; border-radius: 3px;
+      text-transform: uppercase; letter-spacing: .04em;
+    }
+
+    .detail-row {
+      display: flex; gap: .75rem; align-items: center;
+      padding: .75rem 0; border-bottom: 1px solid var(--border);
+      font-size: .875rem;
+    }
+    .detail-row:last-of-type { border-bottom: none; }
+    .detail-label {
+      font-size: .72rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: .07em; color: var(--muted); width: 80px; flex-shrink: 0;
+    }
+    .detail-val { color: var(--text); font-weight: 600; }
+    .detail-icon {
+      width: 32px; height: 32px; border-radius: 50%;
+      background: var(--umb-blue-lt); color: var(--umb-blue);
+      display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    }
+    .detail-icon svg { width: 15px; height: 15px; }
+
+    .notes-box {
+      background: var(--bg-alt); border-radius: var(--r);
+      border: 1px solid var(--border); border-left: 3px solid var(--umb-gold);
+      padding: 1rem 1.1rem; font-size: .875rem; color: var(--text-md);
+      font-style: italic; margin: 1.25rem 0;
+      line-height: 1.65;
+    }
+
+    /* Sidebar */
+    .sidebar-card {
+      background: #fff; border-radius: var(--r-lg);
+      border: 1px solid var(--border); border-top: 3px solid var(--umb-blue);
+      overflow: hidden; box-shadow: var(--shadow);
+      position: sticky; top: 5rem;
+    }
+    .seller-header {
+      background: var(--bg-alt); border-bottom: 1px solid var(--border);
+      padding: 1rem 1.25rem;
+      font-size: .75rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: .07em; color: var(--muted);
+    }
+    .seller-body { padding: 1.25rem; }
+    .seller-avatar-lg {
+      width: 56px; height: 56px; border-radius: 50%;
+      background: var(--umb-blue); color: #fff;
+      display: flex; align-items: center; justify-content: center;
+      font-family: 'Source Serif 4', Georgia, serif;
+      font-size: 1.4rem; font-weight: 700; margin: 0 auto .75rem;
+    }
+    .seller-name-lg {
+      text-align: center;
+      font-family: 'Source Serif 4', Georgia, serif;
+      font-size: 1.05rem; color: var(--umb-blue-dark); font-weight: 700;
+    }
+    .seller-uni { text-align: center; font-size: .75rem; color: var(--muted); margin-bottom: .85rem; }
+    .seller-stats {
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: .5rem; margin-bottom: 1.25rem;
+    }
+    .seller-stat {
+      background: var(--bg-alt); border-radius: var(--r);
+      padding: .6rem .5rem; text-align: center;
+      border: 1px solid var(--border);
+    }
+    .seller-stat-val {
+      font-family: 'Source Serif 4', Georgia, serif;
+      font-size: 1.2rem; color: var(--umb-blue-dark); font-weight: 700;
+    }
+    .seller-stat-lbl {
+      font-size: .65rem; color: var(--muted);
+      text-transform: uppercase; letter-spacing: .06em;
+    }
+    .star-display { color: var(--umb-gold); font-size: 1rem; letter-spacing: 2px; }
+
+    /* Reviews */
+    .reviews-section { margin-top: 2rem; }
+    .reviews-title {
+      font-family: 'Source Serif 4', Georgia, serif;
+      font-size: 1.1rem; color: var(--umb-blue-dark);
+      margin-bottom: 1rem; padding-bottom: .5rem;
+      border-bottom: 2px solid var(--border);
+    }
+    .review-item {
+      padding: .85rem 0; border-bottom: 1px solid var(--border);
+      font-size: .875rem;
+    }
+    .review-item:last-child { border-bottom: none; }
+    .review-stars { color: var(--umb-gold); font-size: .85rem; margin-bottom: .2rem; }
+    .review-text { color: var(--muted); font-style: italic; font-size: .82rem; }
+    .review-by   { font-size: .72rem; color: var(--muted); margin-top: .25rem; }
+
+    /* Request modal */
+    .modal-overlay { display: none; align-items: center; justify-content: center; }
+    .modal-overlay.open { display: flex; }
+
+    /* Own listing notice */
+    .own-listing-notice {
+      background: var(--umb-blue-lt);
+      border: 1px solid var(--umb-blue);
+      border-radius: var(--r); padding: .85rem 1rem;
+      font-size: .875rem; color: var(--umb-blue-dark);
+      text-align: center; margin-top: 1rem;
+    }
+
+    @media (max-width: 768px) {
+      .detail-layout { grid-template-columns: 1fr; }
+      .sidebar-card { position: static; }
+    }
+  </style>
+</head>
+<body>
+
+<nav class="nav">
+  <a href="dashboard.html" class="nav-logo">
+    <div class="nav-logo-icon" style="font-family:'Source Serif 4',Georgia,serif;font-size:.85rem;font-weight:700;letter-spacing:-.5px;">PS</div>
+    <div>
+      <div class="nav-logo-title">PointSwap</div>
+      <div class="nav-logo-sub">UMass Boston Dining Exchange</div>
+    </div>
+  </a>
+  <div class="nav-links">
+    <a href="dashboard.html" class="nav-link">Browse Meals</a>
+    <a href="create.html"    class="nav-link">Post a Meal</a>
+    <a href="messages.html"  class="nav-link">Messages</a>
+    <a href="profile.html"   class="nav-avatar" id="nav-avatar">?</a>
+  </div>
+  <button class="hamburger" id="hamburger" onclick="toggleNav()" aria-label="Menu">
+    <span></span><span></span><span></span>
+  </button>
+</nav>
+
+<!-- Mobile nav drawer -->
+<div class="mobile-nav-drawer" id="mobile-drawer">
+  <a href="dashboard.html" class="mobile-nav-link ">Browse Meals</a>
+  <a href="create.html" class="mobile-nav-link ">Post a Meal</a>
+  <a href="messages.html" class="mobile-nav-link ">
+    Messages <span class="mobile-nav-badge" id="mob-msg-badge" style="display:none;"></span>
+  </a>
+  <a href="profile.html" class="mobile-nav-link ">Profile</a>
+</div>
+
+<div class="page">
+  <a href="dashboard.html" style="display:inline-flex;align-items:center;gap:.4rem;color:var(--muted);text-decoration:none;font-size:.825rem;font-weight:600;margin-bottom:1.5rem;">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+    Back to Browse
+  </a>
+
+  <div id="loading" style="text-align:center;padding:4rem;color:var(--muted);">Loading listing…</div>
+
+  <div class="detail-layout" id="detail-layout" style="display:none;">
+
+    <!-- Main -->
+    <div>
+      <div class="listing-hero">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:.5rem;">
+          <div class="listing-hero-hall" id="d-hall">—</div>
+          <span class="badge badge-green" id="d-status">Active</span>
+        </div>
+        <div class="listing-hero-meta" id="d-time">—</div>
+      </div>
+
+      <div class="listing-body-card">
+        <div class="price-row">
+          <span class="price-big"  id="d-price">$—</span>
+          <span class="price-orig" id="d-value">$—</span>
+          <span class="price-save" id="d-savings"></span>
+        </div>
+
+        <div class="detail-row">
+          <div class="detail-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
+          </div>
+          <span class="detail-label">Location</span>
+          <span class="detail-val" id="d-location">—</span>
+        </div>
+        <div class="detail-row">
+          <div class="detail-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+          </div>
+          <span class="detail-label">Date</span>
+          <span class="detail-val" id="d-date">—</span>
+        </div>
+        <div class="detail-row">
+          <div class="detail-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          </div>
+          <span class="detail-label">Time</span>
+          <span class="detail-val" id="d-timeval">—</span>
+        </div>
+        <div class="detail-row">
+          <div class="detail-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+          </div>
+          <span class="detail-label">Meal value</span>
+          <span class="detail-val" id="d-mealval">—</span>
+        </div>
+
+        <div id="notes-wrap" style="display:none;">
+          <div class="notes-box" id="d-notes"></div>
+        </div>
+
+        <div id="own-listing-notice" class="own-listing-notice" style="display:none;">
+          This is your listing. You can edit or cancel it from the Post a Meal page.
+        </div>
+
+        <div id="action-area" style="margin-top:1.25rem;">
+          <button class="btn btn-primary btn-full" id="btn-request" onclick="openModal()" style="font-size:1rem;padding:.75rem;">
+            Request This Meal
+          </button>
+        </div>
+      </div>
+
+      <!-- Reviews -->
+      <div class="reviews-section">
+        <div class="reviews-title">Seller Reviews</div>
+        <div id="reviews-list">
+          <div style="color:var(--muted);font-size:.875rem;">Loading reviews…</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Sidebar -->
+    <div class="sidebar-card">
+      <div class="seller-header">About the Seller</div>
+      <div class="seller-body">
+        <div class="seller-avatar-lg" id="s-avatar">?</div>
+        <div class="seller-name-lg" id="s-name" style="cursor:pointer;" onclick="goToProfile()">—</div><div id="s-badges" style="display:flex;gap:.4rem;justify-content:center;flex-wrap:wrap;margin-bottom:.75rem;"></div>
+        <div class="seller-uni"     id="s-uni">—</div>
+        <div style="text-align:center;margin-bottom:1rem;">
+          <span class="star-display" id="s-stars">—</span>
+          <span style="font-size:.78rem;color:var(--muted);" id="s-rating-text"></span>
+        </div>
+        <div class="seller-stats">
+          <div class="seller-stat">
+            <div class="seller-stat-val" id="s-sold">0</div>
+            <div class="seller-stat-lbl">Meals Sold</div>
+          </div>
+          <div class="seller-stat">
+            <div class="seller-stat-val" id="s-reviews-count">0</div>
+            <div class="seller-stat-lbl">Reviews</div>
+          </div>
+        </div>
+        <button class="btn btn-primary btn-full" id="btn-req-sidebar" onclick="openModal()">
+          Request This Meal
+        </button>
+        <div id="own-listing-sidebar" style="display:none;text-align:center;font-size:.8rem;color:var(--muted);margin-top:.75rem;">
+          You are the seller of this listing.
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Request Modal -->
+<div class="modal-overlay" id="req-modal">
+  <div class="modal">
+    <h3 class="modal-title">Request This Meal</h3>
+    <p style="color:var(--muted);font-size:.875rem;margin-bottom:1.25rem;">
+      The seller will review your request. Once accepted, coordinate a meetup via Messages.
+    </p>
+    <div class="form-group">
+      <label class="form-label">Note to Seller (optional)</label>
+      <textarea class="form-textarea" id="req-msg" placeholder="Hey! I'm free around noon — does that work?" maxlength="280"></textarea>
+    </div>
+    <div style="display:flex;gap:.75rem;">
+      <button class="btn btn-outline" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-accent" id="btn-req-submit" onclick="submitRequest()" style="flex:1;">Send Request</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast-container" id="toasts"></div>
+
+<script type="module">
+  import { auth, db } from './firebase-config.js';
+  import { initNotifications } from './nav-notifications.js';
+  import { notifyNewRequest } from './email-notifications.js';
+  import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+  import {
+    doc, getDoc, collection, query, where, getDocs,
+    addDoc, setDoc, serverTimestamp
+  } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+  let me = null, meData = null, listing = null, listingId = null;
+
+  // Get listing ID from URL
+  const params = new URLSearchParams(window.location.search);
+  listingId = params.get('id');
+  if (!listingId) window.location.href = 'dashboard.html';
+
+  onAuthStateChanged(auth, async u => {
+    if (!u) return (window.location.href = 'index.html');
+    // @umb.edu enforced at registration — no email verification needed
+    me = u;
+    const snap = await getDoc(doc(db, 'users', u.uid));
+    meData = snap.exists() ? snap.data() : { name: u.displayName || u.email?.split('@')[0] || 'User', email: u.email || '' };
+    applyAvatar('nav-avatar', meData);
+    initNotifications(u.uid);
+    await loadListing();
+  });
+
+  async function loadListing() {
+    try {
+      const snap = await getDoc(doc(db, 'listings', listingId));
+      if (!snap.exists()) { window.location.href = 'dashboard.html'; return; }
+      listing = { id: snap.id, ...snap.data() };
+      await renderListing();
+      await loadSeller();
+      await loadReviews();
+    } catch(e) {
+      console.error(e);
+      document.getElementById('loading').textContent = 'Could not load this listing.';
+    }
+  }
+
+  async function getExistingConversationId() {
+    if (!me?.uid || !listing?.sellerId || !listingId) return null;
+    const convId = [me.uid, listing.sellerId].sort().join('_') + '_' + listingId;
+    try {
+      const convSnap = await getDoc(doc(db, 'conversations', convId));
+      return convSnap.exists() ? convId : null;
+    } catch (e) {
+      console.warn('conversation check failed', e);
+      return null;
+    }
+  }
+
+  function goToExistingConversation(convId) {
+    if (!convId) return;
+    sessionStorage.setItem('openChatNotice', 'You already contacted this seller for this listing.');
+    window.location.href = 'messages.html?cid=' + encodeURIComponent(convId);
+  }
+
+  async function renderListing() {
+    document.getElementById('loading').style.display = 'none';
+    document.getElementById('detail-layout').style.display = 'grid';
+
+    const d   = listing.availableAt?.toDate ? listing.availableAt.toDate() : new Date();
+    const pct = Math.round(((listing.mealValue - listing.price) / listing.mealValue) * 100);
+
+    document.getElementById('d-hall').textContent    = listing.diningHall;
+    document.getElementById('d-location').textContent = listing.diningHall;
+    document.getElementById('d-price').textContent   = '$' + listing.price.toFixed(2);
+    document.getElementById('d-value').textContent   = '$' + listing.mealValue.toFixed(2);
+    document.getElementById('d-savings').textContent = 'Save ' + pct + '%';
+    document.getElementById('d-mealval').textContent = '$' + listing.mealValue.toFixed(2) + ' dining value';
+    document.getElementById('d-date').textContent    = d.toLocaleDateString('en-US', { weekday:'long', month:'long', day:'numeric' });
+    document.getElementById('d-timeval').textContent = d.toLocaleTimeString('en-US', { hour:'numeric', minute:'2-digit' });
+    document.getElementById('d-time').textContent    = d.toLocaleDateString('en-US', { weekday:'short', month:'short', day:'numeric' }) + ' at ' + d.toLocaleTimeString('en-US', { hour:'numeric', minute:'2-digit' });
+    document.title = listing.diningHall + ' — PointSwap';
+
+    const statusMap = { active:'badge-green', in_progress:'badge-amber', pending:'badge-amber', completed:'badge-blue', cancelled:'badge-red' };
+    const sEl = document.getElementById('d-status');
+    sEl.textContent = listing.status === 'in_progress' ? 'unavailable' : listing.status; sEl.className = 'badge ' + (statusMap[listing.status] || 'badge-blue');
+
+    if (listing.notes) {
+      document.getElementById('notes-wrap').style.display = 'block';
+      document.getElementById('d-notes').textContent = '"' + listing.notes + '"';
+    }
+
+    // Own listing
+    if (listing.sellerId === me.uid) {
+      document.getElementById('own-listing-notice').style.display = 'block';
+      document.getElementById('action-area').style.display = 'none';
+      document.getElementById('btn-req-sidebar').style.display = 'none';
+      document.getElementById('own-listing-sidebar').style.display = 'block';
+    }
+    // Inactive listing
+    if (listing.status !== 'active') {
+      document.getElementById('btn-request').disabled = true;
+      document.getElementById('btn-request').textContent = 'This listing is no longer available';
+      document.getElementById('btn-req-sidebar').disabled = true;
+      document.getElementById('btn-req-sidebar').textContent = 'Unavailable';
+      return;
+    }
+
+    const existingConvId = await getExistingConversationId();
+    if (existingConvId) {
+      const mainBtn = document.getElementById('btn-request');
+      const sideBtn = document.getElementById('btn-req-sidebar');
+      if (mainBtn) {
+        mainBtn.disabled = false;
+        mainBtn.textContent = 'Open Existing Chat';
+        mainBtn.onclick = () => goToExistingConversation(existingConvId);
+      }
+      if (sideBtn) {
+        sideBtn.disabled = false;
+        sideBtn.textContent = 'Open Existing Chat';
+        sideBtn.onclick = () => goToExistingConversation(existingConvId);
+      }
+    }
+  }
+
+  async function loadSeller() {
+    try {
+      const snap = await getDoc(doc(db, 'users', listing.sellerId));
+      if (!snap.exists()) return;
+      const s = snap.data();
+      const av = document.getElementById('s-avatar');
+      if (s.profilePhoto) { av.textContent = ''; av.style.backgroundImage = `url('${s.profilePhoto}')`; av.classList.add('has-photo'); }
+      else { av.textContent = s.name[0].toUpperCase(); av.style.backgroundImage = ''; av.classList.remove('has-photo'); }
+      document.getElementById('s-name').textContent   = s.name;
+      document.getElementById('s-uni').textContent    = s.university || 'UMass Boston';
+      document.getElementById('s-sold').textContent   = s.totalSold || 0;
+      document.getElementById('s-reviews-count').textContent = s.ratingCount || 0;
+      const r = s.avgRating || 0;
+      const stars = '★'.repeat(Math.round(r)) + '☆'.repeat(5 - Math.round(r));
+      document.getElementById('s-stars').textContent = stars;
+      document.getElementById('s-rating-text').textContent = r ? r.toFixed(1) + ' out of 5' : 'No ratings yet';
+      document.getElementById('s-badges').innerHTML = `
+        <span style="padding:.2rem .55rem;border-radius:999px;background:#eff6ff;color:#1d4ed8;font-size:.72rem;font-weight:800;">Verified student</span>
+        <span style="padding:.2rem .55rem;border-radius:999px;background:#f0fdf4;color:#166534;font-size:.72rem;font-weight:800;">${s.totalSold || 0} completed swap${(s.totalSold || 0) === 1 ? '' : 's'}</span>
+      `;
+    } catch(e) { console.error('seller load failed', e); }
+  }
+
+  async function loadReviews() {
+    const el = document.getElementById('reviews-list');
+    try {
+      const q = query(
+        collection(db, 'requests'),
+        where('sellerId', '==', listing.sellerId),
+        where('status', '==', 'completed')
+      );
+      const snap = await getDocs(q);
+      const rated = snap.docs.map(d => ({ id: d.id, ...d.data() }))
+        .filter(r => r.buyerRating)
+        .map(r => ({
+          rating: r.buyerRating,
+          reviewText: r.buyerReviewText,
+          reviewerName: r.buyerReviewerName || r.buyerName || 'Anonymous'
+        }));
+      if (!rated.length) {
+        el.innerHTML = '<div style="color:var(--muted);font-size:.875rem;padding:.5rem 0;">No reviews yet — be the first to rate this seller!</div>';
+        return;
+      }
+      el.innerHTML = rated.map(r => `
+        <div class="review-item">
+          <div class="review-stars">${'★'.repeat(r.rating)}${'☆'.repeat(5 - r.rating)}</div>
+          ${r.reviewText ? `<div class="review-text">"${r.reviewText}"</div>` : ''}
+          <div class="review-by">${r.reviewerName}</div>
+        </div>`).join('');
+    } catch(e) {
+      el.innerHTML = '<div style="color:var(--muted);font-size:.875rem;">Could not load reviews.</div>';
+    }
+  }
+
+  const MAX_REQUEST_MSG_LEN = 280;
+  function cleanText(v) { return (v || '').replace(/\s+/g, ' ').trim(); }
+
+  // ── Request modal ──────────────────────────────────
+  window.openModal  = () => document.getElementById('req-modal').classList.add('open');
+  window.closeModal = () => document.getElementById('req-modal').classList.remove('open');
+  document.getElementById('req-modal').addEventListener('click', e => {
+    if (e.target === e.currentTarget) window.closeModal();
+  });
+
+  window.submitRequest = async () => {
+    const msg = cleanText(document.getElementById('req-msg').value);
+    if (msg.length > MAX_REQUEST_MSG_LEN) {
+      toast(`Message must be ${MAX_REQUEST_MSG_LEN} characters or fewer.`, 'error');
+      return;
+    }
+    document.getElementById('req-msg').value = msg;
+    const btn = document.getElementById('btn-req-submit');
+    btn.disabled = true; btn.innerHTML = '<div class="spinner"></div>';
+    try {
+      const existingConvId = await getExistingConversationId();
+      if (existingConvId) {
+        window.closeModal();
+        goToExistingConversation(existingConvId);
+        return;
+      }
+
+      const reqRef = await addDoc(collection(db, 'requests'), {
+        listingId, buyerId: me.uid, buyerName: meData.name,
+        sellerId: listing.sellerId, sellerName: listing.sellerName,
+        message: msg, status: 'pending', createdAt: serverTimestamp()
+      });
+      const convId = [me.uid, listing.sellerId].sort().join('_') + '_' + listingId;
+      await setDoc(doc(db, 'conversations', convId), {
+        participants: [me.uid, listing.sellerId],
+        listingId,
+        lastMessage:  msg || 'Meal request for ' + listing.diningHall,
+        lastMessageAt: serverTimestamp(), lastSenderId: me.uid,
+        diningHall: listing.diningHall,
+        participantNames: { [me.uid]: meData.name, [listing.sellerId]: listing.sellerName }
+      }, { merge: true });
+      if (msg) {
+        await addDoc(collection(db, 'conversations', convId, 'messages'), {
+          senderId: me.uid, senderName: meData.name, text: msg, createdAt: serverTimestamp()
+        });
+      }
+      // Email seller
+      try {
+        const sellerSnap = await getDoc(doc(db, 'users', listing.sellerId));
+        if (sellerSnap.exists()) {
+          const seller = sellerSnap.data();
+          await notifyNewRequest({
+            toEmail: seller.email, toName: seller.name, buyerName: meData.name,
+            diningHall: listing.diningHall, price: listing.price, message: msg
+          });
+        }
+      } catch(e) { console.warn('Email failed:', e); }
+
+      window.closeModal();
+      toast('Request sent! Check Messages for updates.', 'success');
+      document.getElementById('btn-request').disabled = true;
+      document.getElementById('btn-request').textContent = 'Request Sent';
+      document.getElementById('btn-req-sidebar').disabled = true;
+      document.getElementById('btn-req-sidebar').textContent = 'Request Sent';
+    } catch(e) {
+      console.error(e);
+      toast('Failed to send request. Try again.', 'error');
+    }
+    btn.disabled = false; btn.textContent = 'Send Request';
+  };
+
+  window.goToProfile = () => {
+    if (listing?.sellerId) window.location.href = 'user-profile.html?uid=' + listing.sellerId;
+  };
+
+
+  function applyAvatar(id, user) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const init = ((user?.name || '?')[0] || '?').toUpperCase();
+    if (user?.profilePhoto) {
+      el.textContent = '';
+      el.style.backgroundImage = "url('" + user.profilePhoto + "')";
+      el.classList.add('has-photo');
+    } else {
+      el.textContent = init;
+      el.style.backgroundImage = '';
+      el.classList.remove('has-photo');
+    }
+  }
+  function toast(msg, type='') {
+    const t = document.createElement('div');
+    t.className = `toast ${type}`; t.textContent = msg;
+    document.getElementById('toasts').appendChild(t);
+    setTimeout(() => t.remove(), 4500);
+  }
+
+
+window.toggleNav = function() {
+  var btn    = document.getElementById('hamburger');
+  var drawer = document.getElementById('mobile-drawer');
+  if (!btn || !drawer) return;
+  var open   = drawer.classList.toggle('open');
+  btn.classList.toggle('open', open);
+}
+document.addEventListener('click', function(e) {
+  var drawer = document.getElementById('mobile-drawer');
+  var btn    = document.getElementById('hamburger');
+  if (!drawer || !btn) return;
+  if (!drawer.contains(e.target) && !btn.contains(e.target)) {
+    drawer.classList.remove('open');
+    btn.classList.remove('open');
+  }
+});
+setInterval(function() {
+  var desktop = document.querySelector('#nav-notif-msgs');
+  var mob = document.getElementById('mob-msg-badge');
+  if (!desktop || !mob) return;
+  var count = desktop.textContent;
+  if (count && desktop.style.display !== 'none') {
+    mob.textContent = count; mob.style.display = 'inline';
+  } else { mob.style.display = 'none'; }
+}, 1000);
+
+</script>
+
+<!-- Floating feedback button -->
+<a href="https://docs.google.com/forms/d/e/1FAIpQLSdUyonvfvlpv7T6oQ2jBR94P2aSyiAn9H2W5nlcPUN65PwCfQ/viewform?usp=publish-editor" target="_blank"
+  style="position:fixed;bottom:1.5rem;left:1.5rem;z-index:200;
+    background:var(--umb-blue);color:#fff;
+    padding:.5rem 1rem;border-radius:99px;
+    font-size:.75rem;font-weight:700;text-decoration:none;
+    box-shadow:0 2px 12px rgba(0,50,90,.25);
+    display:flex;align-items:center;gap:.4rem;
+    transition:all .15s;"
+  onmouseover="this.style.background='var(--umb-blue-dark)';this.style.transform='translateY(-2px)'"
+  onmouseout="this.style.background='var(--umb-blue)';this.style.transform=''"
+  title="Share your feedback about PointSwap">
+  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+  </svg>
+  Feedback
+</a>
+
+<!-- Site Footer -->
+<footer style="margin-top:3rem;background:var(--umb-blue-dark);padding:1.75rem 2rem;border-top:3px solid var(--umb-gold);">
+  <div style="max-width:1200px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:1rem;">
+
+    <!-- Left: brand -->
+    <div style="display:flex;align-items:center;gap:.75rem;">
+      <div style="width:32px;height:32px;background:var(--umb-gold);border-radius:6px;display:flex;align-items:center;justify-content:center;font-family:'Source Serif 4',Georgia,serif;font-size:.8rem;font-weight:700;color:var(--umb-blue-dark);flex-shrink:0;">PS</div>
+      <div>
+        <div style="font-family:'Source Serif 4',Georgia,serif;font-weight:700;color:#fff;font-size:.9rem;line-height:1.2;">PointSwap</div>
+        <div style="font-size:.68rem;color:rgba(255,255,255,.45);letter-spacing:.05em;text-transform:uppercase;">UMass Boston Dining Exchange</div>
+      </div>
+    </div>
+
+    <!-- Center: links -->
+    <div style="display:flex;align-items:center;gap:1.5rem;flex-wrap:wrap;">
+      <a href="tos.html" style="color:rgba(255,255,255,.55);font-size:.78rem;text-decoration:none;transition:color .15s;" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='rgba(255,255,255,.55)'">Terms of Service</a>
+      <a href="https://www.umb.edu/registrar/academic-calendar/" target="_blank" style="color:rgba(255,255,255,.55);font-size:.78rem;text-decoration:none;transition:color .15s;" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='rgba(255,255,255,.55)'">UMB Calendar</a>
+      <a href="https://docs.google.com/forms/d/e/1FAIpQLSdUyonvfvlpv7T6oQ2jBR94P2aSyiAn9H2W5nlcPUN65PwCfQ/viewform?usp=publish-editor" target="_blank" style="color:rgba(255,255,255,.55);font-size:.78rem;text-decoration:none;transition:color .15s;" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='rgba(255,255,255,.55)'">Give Feedback</a>
+    </div>
+
+    <!-- Right: Instagram -->
+    <a href="https://www.instagram.com/pointswap.umb/" target="_blank" rel="noopener"
+      style="display:flex;align-items:center;gap:.6rem;text-decoration:none;
+        background:linear-gradient(135deg,#833ab4,#fd1d1d,#fcb045);
+        padding:.55rem 1rem;border-radius:99px;
+        color:#fff;font-size:.8rem;font-weight:700;
+        box-shadow:0 2px 12px rgba(0,0,0,.25);
+        transition:all .15s;flex-shrink:0;"
+      onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 4px 18px rgba(0,0,0,.35)'"
+      onmouseout="this.style.transform='';this.style.boxShadow='0 2px 12px rgba(0,0,0,.25)'">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="2" y="2" width="20" height="20" rx="5" ry="5"/>
+        <circle cx="12" cy="12" r="4"/>
+        <circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none"/>
+      </svg>
+      @pointswap.umb
+    </a>
+
+  </div>
+
+  <div style="max-width:1200px;margin:.75rem auto 0;padding-top:.75rem;border-top:1px solid rgba(255,255,255,.08);text-align:center;">
+    <span style="font-size:.68rem;color:rgba(255,255,255,.3);">© 2025 PointSwap · A UMass Boston student project · Not affiliated with UMass Boston Dining Services</span>
+  </div>
+</footer>
+
+</body>
+</html>

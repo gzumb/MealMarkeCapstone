@@ -1,17 +1,204 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1" />
-    <title>Meal Market</title>
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <script type="module" crossorigin src="/assets/index-Dc4lbAi4.js"></script>
-    <link rel="stylesheet" crossorigin href="/assets/index-CC5NWby5.css">
-  </head>
-  <body>
-    <div id="root"></div>
-  </body>
+<head>
+  <meta charset="UTF-8">
+  <!-- Performance: preconnect to external resources -->
+  <link rel="preconnect" href="https://www.gstatic.com" crossorigin>
+  <link rel="preconnect" href="https://firestore.googleapis.com" crossorigin>
+  <link rel="preconnect" href="https://identitytoolkit.googleapis.com" crossorigin>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;0,8..60,700;1,8..60,400&family=Source+Sans+3:wght@300;400;600;700;900&display=swap">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;0,8..60,700;1,8..60,400&family=Source+Sans+3:wght@300;400;600;700;900&display=swap">
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Reset Password – PointSwap</title>
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    body { background: var(--umb-blue-dark); min-height: 100vh; display: flex; flex-direction: column; }
+
+    .forgot-wrap {
+      flex: 1;
+      display: flex; align-items: center; justify-content: center;
+      padding: 2rem;
+    }
+
+    .forgot-card {
+      background: #fff;
+      border-radius: var(--r-lg);
+      border-top: 4px solid var(--umb-blue);
+      padding: 2.5rem;
+      width: 100%; max-width: 420px;
+      box-shadow: var(--shadow-lg);
+    }
+
+    .back-link {
+      display: inline-flex; align-items: center; gap: .4rem;
+      color: rgba(255,255,255,.6); text-decoration: none;
+      font-size: .8rem; font-weight: 600;
+      padding: 1rem 1.5rem;
+      transition: color .15s;
+    }
+    .back-link:hover { color: #fff; }
+    .back-link svg { width:14px; height:14px; }
+
+    .card-icon {
+      width: 52px; height: 52px;
+      background: var(--umb-blue-lt);
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      margin-bottom: 1.25rem;
+    }
+    .card-icon svg { width: 24px; height: 24px; color: var(--umb-blue); }
+
+    .card-title {
+      font-family: 'Source Serif 4', Georgia, serif;
+      font-size: 1.5rem; color: var(--umb-blue-dark);
+      margin-bottom: .35rem;
+    }
+    .card-sub { color: var(--muted); font-size: .875rem; margin-bottom: 1.75rem; line-height: 1.6; }
+
+    /* Success state */
+    .success-state { display: none; text-align: center; }
+    .success-icon {
+      width: 60px; height: 60px; border-radius: 50%;
+      background: #d1fae5; border: 2px solid #6ee7b7;
+      display: flex; align-items: center; justify-content: center;
+      margin: 0 auto 1.25rem;
+    }
+    .success-icon svg { width: 28px; height: 28px; color: #065f46; }
+    .success-title {
+      font-family: 'Source Serif 4', Georgia, serif;
+      font-size: 1.35rem; color: var(--umb-blue-dark); margin-bottom: .5rem;
+    }
+    .success-body { font-size: .875rem; color: var(--muted); line-height: 1.7; margin-bottom: 1.5rem; }
+    .success-email { font-weight: 700; color: var(--umb-blue-dark); }
+  </style>
+</head>
+<body>
+
+<a href="index.html" class="back-link">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+  Back to Sign In
+</a>
+
+<div class="forgot-wrap">
+  <div class="forgot-card">
+
+    <!-- Request form -->
+    <div id="form-state">
+      <div class="card-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="2" y="4" width="20" height="16" rx="2"/>
+          <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/>
+        </svg>
+      </div>
+      <h1 class="card-title">Reset your password</h1>
+      <p class="card-sub">Enter your university email and we'll send you a link to reset your password.</p>
+
+      <div class="error-box" id="err-reset"></div>
+
+      <div class="form-group">
+        <label class="form-label">University Email</label>
+        <input type="email" class="form-input" id="reset-email" placeholder="you@umb.edu" autocomplete="email" />
+      </div>
+
+      <button class="btn btn-primary btn-full" id="btn-reset" onclick="doReset()">Send Reset Link</button>
+
+      <p style="text-align:center;margin-top:1rem;font-size:.8rem;color:var(--muted);">
+        Remember your password? <a href="index.html" style="color:var(--umb-blue);font-weight:700;">Sign in</a>
+      </p>
+    </div>
+
+    <!-- Success state -->
+    <div class="success-state" id="success-state">
+      <div class="success-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M20 6 9 17l-5-5"/>
+        </svg>
+      </div>
+      <h2 class="success-title">Check your inbox</h2>
+      <p class="success-body">
+        We sent a password reset link to<br>
+        <span class="success-email" id="sent-to-email"></span>.<br><br>
+        The link expires in 1 hour. Check your spam folder if you don't see it.
+      </p>
+      <a href="index.html" class="btn btn-primary btn-full">Back to Sign In</a>
+      <button id="btn-resend-reset" onclick="doReset(true)"
+        style="margin-top:.75rem;width:100%;background:none;border:none;color:var(--umb-blue);font-family:inherit;font-size:.8rem;cursor:pointer;text-decoration:underline;padding:.3rem;">
+        Resend the email
+      </button>
+    </div>
+
+  </div>
+</div>
+
+<div class="toast-container" id="toasts"></div>
+
+<div class="toast-container" id="toasts"></div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script>
+  const firebaseConfig = {
+    apiKey:            "AIzaSyBfnA0UKyCNNq025JTAph-i6JLO8mvkfNA",
+    authDomain:        "pointswap-fe5aa.firebaseapp.com",
+    projectId:         "pointswap-fe5aa",
+    storageBucket:     "pointswap-fe5aa.firebasestorage.app",
+    messagingSenderId: "344714572903",
+    appId:             "1:344714572903:web:9961afddabd95a798250c2"
+  };
+  if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+  const auth = firebase.auth();
+
+  var AUTH_ERRORS = {
+    'auth/user-not-found': 'No account found with this email address.',
+    'auth/invalid-email':  "That doesn't look like a valid email address.",
+    'auth/too-many-requests': 'Too many attempts — please wait a few minutes.',
+  };
+
+  function doReset(isResend) {
+    var email = document.getElementById('reset-email').value.trim();
+    var errEl = document.getElementById('err-reset');
+    errEl.style.display = 'none';
+    if (!email) { errEl.textContent = 'Please enter your email address.'; errEl.style.display = 'block'; return; }
+    if (!email.endsWith('.edu')) { errEl.textContent = 'Please use your university .edu email.'; errEl.style.display = 'block'; return; }
+
+    var btn = isResend
+      ? document.getElementById('btn-resend-reset')
+      : document.getElementById('btn-reset');
+    var orig = btn.innerHTML;
+    btn.disabled = true;
+    if (!isResend) btn.innerHTML = '<div class="spinner"></div> Sending…';
+
+    auth.sendPasswordResetEmail(email)
+      .then(function() {
+        document.getElementById('sent-to-email').textContent = email;
+        document.getElementById('form-state').style.display = 'none';
+        document.getElementById('success-state').style.display = 'block';
+        if (isResend) toast('Reset email resent!', 'success');
+      })
+      .catch(function(e) {
+        errEl.textContent = AUTH_ERRORS[e.code] || 'Something went wrong. Please try again.';
+        errEl.style.display = 'block';
+      })
+      .finally(function() {
+        btn.disabled = false;
+        if (!isResend) btn.innerHTML = orig;
+      });
+  }
+
+  function toast(msg, type) {
+    var t = document.createElement('div');
+    t.className = 'toast ' + (type || '');
+    t.textContent = msg;
+    document.getElementById('toasts').appendChild(t);
+    setTimeout(function() { t.remove(); }, 4000);
+  }
+
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') doReset(false);
+  });
+</script>
+</body>
 </html>

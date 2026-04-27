@@ -1,0 +1,606 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+ <meta charset="UTF-8">
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
+  <!-- Disable Cloudflare email obfuscation -->
+  <meta name="cf-2fa-verify" content="no">
+ <meta name="viewport" content="width=device-width, initial-scale=1.0">
+ <title>Post a Meal – PointSwap</title>
+ <link rel="stylesheet" href="styles.css">
+ <style>
+ .create-layout {
+ display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; align-items: start;
+ }
+ .preview-wrap { position: sticky; top: 5rem; }
+ .preview-label {
+ font-size: .72rem; font-weight: 700;
+ text-transform: uppercase; letter-spacing: .1em;
+ color: var(--muted); margin-bottom: .65rem;
+ }
+ .mini-card { border-radius: var(--r-lg); border: 1px solid var(--border); overflow: hidden; border-top: 3px solid var(--umb-blue); }
+ .mini-card-head {
+ background: var(--bg-alt); border-bottom: 1px solid var(--border);
+ padding: .85rem 1.1rem;
+ display: flex; justify-content: space-between; align-items: flex-start;
+ }
+ .mini-card-body { padding: 1.1rem; background: #fff; }
+ .my-list-item {
+ display: flex; justify-content: space-between; align-items: center;
+ padding: .85rem 1rem;
+ border: 1px solid var(--border); border-radius: var(--r);
+ border-left: 3px solid var(--umb-blue);
+ background: #fff; margin-bottom: .65rem; gap: 1rem;
+ }
+ .my-list-item:hover { border-left-color: var(--umb-gold); }
+ .hint-text { font-size: .8rem; margin-top: -.5rem; margin-bottom: .85rem; }
+ @media (max-width: 768px) {
+ .create-layout { grid-template-columns: 1fr; }
+ .preview-wrap { position: static; }
+ }
+ </style>
+</head>
+<body>
+
+<script>
+// Safety fallback — hide loading overlay after 5s no matter what
+setTimeout(function() {
+  var el = document.getElementById('auth-loading');
+  if (el) el.style.display = 'none';
+}, 2000);
+</script>
+<div id="auth-loading"  style="position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;z-index:999;">
+  <div class="spinner" style="width:28px;height:28px;border-width:3px;border-color:rgba(0,90,139,.2);border-top-color:var(--umb-blue);"></div>
+</div>
+<div class="accent-bar"></div>
+<nav class="nav">
+ <a href="dashboard.html" class="nav-logo">
+ <div class="nav-logo-icon" style="font-family:'Source Serif 4',Georgia,serif;font-size:.85rem;font-weight:700;letter-spacing:-.5px;">PS</div>
+ <div>
+ <div class="nav-logo-title">PointSwap</div>
+ <div class="nav-logo-sub">UMass Boston Dining Exchange</div>
+ </div>
+ </a>
+ <div class="nav-links">
+ <a href="dashboard.html" class="nav-link ">Browse Meals</a>
+ <a href="create.html" class="nav-link active">Post a Meal</a>
+ <a href="messages.html" class="nav-link ">Messages</a>
+ <a href="profile.html" class="nav-avatar" id="nav-avatar">?</a>
+ </div>
+  <button class="hamburger" id="hamburger" onclick="toggleNav()" aria-label="Menu">
+    <span></span><span></span><span></span>
+  </button>
+</nav>
+
+<!-- Mobile nav drawer -->
+<div class="mobile-nav-drawer" id="mobile-drawer">
+  <a href="dashboard.html" class="mobile-nav-link ">Browse Meals</a>
+  <a href="create.html" class="mobile-nav-link active">Post a Meal</a>
+  <a href="messages.html" class="mobile-nav-link ">
+    Messages <span class="mobile-nav-badge" id="mob-msg-badge" style="display:none;"></span>
+  </a>
+  <a href="profile.html" class="mobile-nav-link ">Profile</a>
+</div>
+
+<div class="page">
+ <div class="page-header">
+ <h1 class="page-title">Post a Meal</h1>
+ <p class="page-subtitle">Offer a discounted meal from your dining plan</p>
+ <p style="margin-top:.5rem;color:var(--muted);font-size:.95rem;">You can edit any current active listing and permanently delete old or unwanted listings from the section below.</p>
+ </div>
+
+ <div class="create-layout">
+
+ <!-- Form -->
+ <div class="card">
+ <div class="error-box" id="form-err"></div>
+
+ <div class="form-group">
+ <label class="form-label">Dining Hall</label>
+ <select class="form-select" id="f-hall" onchange="preview()">
+ <option value="">Select a dining hall…</option>
+ <option>Late Night Bites</option>
+ <option>Dining Commons</option>
+ <option>UMarket</option>
+ <option>Beacon Café</option>
+ <option>Campus Center Food Court</option>
+ <option>Dunkin'</option>
+        <option>Recreo Brew &amp; Bagel</option>
+ </select>
+ </div>
+
+ <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
+ <div class="form-group">
+ <label class="form-label">Meal Value ($)</label>
+ <input type="number" class="form-input" id="f-value"
+ placeholder="12.00" min="0.01" max="50" step="0.50" oninput="sanitizePrice(this);preview()" onkeydown="blockNegative(event)" />
+ </div>
+ <div class="form-group">
+ <label class="form-label">Your Price ($)</label>
+ <input type="number" class="form-input" id="f-price"
+ placeholder="7.00" min="0.01" max="50" step="0.50" oninput="sanitizePrice(this);preview()" onkeydown="blockNegative(event)" />
+ </div>
+ </div>
+ <p class="hint-text" id="savings-hint"></p>
+
+ <div class="form-group">
+ <label class="form-label">Available Date &amp; Time</label>
+ <input type="datetime-local" class="form-input" id="f-time" oninput="preview()" />
+ </div>
+
+ <div class="form-group">
+ <label class="form-label">Notes for Buyer (optional)</label>
+ <textarea class="form-textarea" id="f-notes"
+ placeholder="e.g. I'm flexible on timing — just message me!" oninput="preview()" maxlength="180"></textarea>
+ </div>
+
+ <button class="btn btn-accent btn-full" id="btn-post" onclick="postListing()">Post Listing →</button>
+ </div>
+
+ <!-- Live Preview -->
+ <div class="preview-wrap">
+ <div class="preview-label">Live Preview — how buyers will see this</div>
+ <div class="mini-card">
+ <div class="mini-card-head">
+ <div>
+ <div style="font-family:'Source Serif 4',Georgia,serif;font-size:1.05rem;color:#fff;" id="p-hall">Select a dining hall</div>
+ <div style="font-size:.72rem;color:rgba(255,255,255,.5);margin-top:.15rem;" id="p-time">Pick a time</div>
+ </div>
+ <span class="badge badge-green">Active</span>
+ </div>
+ <div class="mini-card-body">
+ <div style="display:flex;align-items:baseline;gap:.6rem;margin-bottom:.85rem;">
+ <span style="font-family:'Source Serif 4',Georgia,serif;font-size:2rem;color:var(--primary);" id="p-price">$—</span>
+ <span style="font-size:.95rem;color:var(--muted);text-decoration:line-through;" id="p-value">$—</span>
+ <span id="p-savings" style="display:none;font-size:.72rem;font-weight:700;color:#065f46;background:#d1fae5;padding:.2rem .5rem;border-radius:99px;"></span>
+ </div>
+ <div style="display:flex;align-items:center;gap:.6rem;margin-bottom:.85rem;">
+ <div id="p-avatar" style="width:32px;height:32px;border-radius:50%;background:var(--umb-blue);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:.75rem;">?</div>
+ <div>
+ <div style="font-size:.875rem;font-weight:700;" id="p-name">You</div>
+ <div style="font-size:.72rem;color:var(--muted);">New seller</div>
+ </div>
+ </div>
+ <p style="font-size:.8rem;color:var(--muted);margin-bottom:.85rem;font-style:italic;" id="p-notes"></p>
+ <div style="background:var(--primary);color:#fff;border-radius:var(--r);padding:.625rem 1.25rem;text-align:center;font-size:.875rem;font-weight:700;opacity:.4;">
+ Request This Meal →
+ </div>
+ </div>
+ </div>
+ </div>
+ </div>
+
+ <!-- Live Listings -->
+ <div style="margin-top:3rem;">
+ <h2 style="font-family:'Source Serif 4',Georgia,serif;font-size:1.5rem;color:var(--primary);margin-bottom:1rem;">Live Listings</h2>
+ <div id="my-listings">
+ <div style="color:var(--muted);font-size:.875rem;">Loading your listings…</div>
+ </div>
+ </div>
+</div>
+
+
+<!-- Edit Listing Modal -->
+<div class="modal-overlay" id="edit-modal">
+  <div class="modal">
+    <h3 class="modal-title">Edit Listing</h3>
+    <div class="error-box" id="edit-err"></div>
+    <input type="hidden" id="edit-id" />
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
+      <div class="form-group">
+        <label class="form-label">Meal Value ($)</label>
+        <input type="number" class="form-input" id="edit-value" min="0.01" max="50" step="0.50" oninput="sanitizePrice(this)" onkeydown="blockNegative(event)" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Your Price ($)</label>
+        <input type="number" class="form-input" id="edit-price" min="0.01" max="50" step="0.50" oninput="sanitizePrice(this)" onkeydown="blockNegative(event)" />
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Available Date &amp; Time</label>
+      <input type="datetime-local" class="form-input" id="edit-time" />
+    </div>
+    <div class="form-group">
+      <label class="form-label">Notes (optional)</label>
+      <textarea class="form-textarea" id="edit-notes" maxlength="180"></textarea>
+    </div>
+    <div style="display:flex;gap:.75rem;">
+      <button class="btn btn-outline" onclick="document.getElementById('edit-modal').classList.remove('open')">Cancel</button>
+      <button class="btn btn-accent" id="btn-save-edit" onclick="saveEdit()" style="flex:1;">Save Changes</button>
+    </div>
+  </div>
+</div>
+<div class="toast-container" id="toasts"></div>
+
+<script type="module">
+ import { auth, db } from './firebase-config.js';
+ import { initNotifications } from './nav-notifications.js';
+ import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+ import {
+ collection, query, where, orderBy, onSnapshot,
+ addDoc, doc, getDoc, updateDoc, deleteDoc, serverTimestamp, Timestamp
+ } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+ let me = null, meData = null;
+
+ // Auth 
+ onAuthStateChanged(auth, async u => {
+ if (!u) return (window.location.href = 'index.html');
+
+ me = u;
+ const snap = await getDoc(doc(db, 'users', u.uid));
+ meData = snap.exists() ? snap.data() : { name: u.displayName || u.email?.split('@')[0] || 'User', email: u.email || '' };
+
+ const initial = meData.name[0].toUpperCase();
+ applyAvatar('nav-avatar', meData);
+ initNotifications(u.uid);
+ applyPreviewAvatar(meData);
+ document.getElementById('p-name').textContent = meData.name;
+
+ // Set min datetime
+ const now = new Date();
+ now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+ document.getElementById('f-time').min = now.toISOString().slice(0, 16);
+
+ listenMyListings();
+ });
+
+ 
+ function applyPreviewAvatar(user) {
+   const el = document.getElementById('p-avatar');
+   if (!el) return;
+   if (user?.profilePhoto) {
+     el.textContent = '';
+     el.style.backgroundImage = `url('${user.profilePhoto}')`;
+     el.style.backgroundSize = 'cover';
+     el.style.backgroundPosition = 'center';
+   } else {
+     const initial = (user?.name || '?')[0].toUpperCase();
+     el.textContent = initial;
+     el.style.backgroundImage = '';
+   }
+ }
+
+ // My listings 
+ function listenMyListings() {
+ const q = query(
+ collection(db, 'listings'),
+ where('sellerId', '==', me.uid),
+ orderBy('createdAt', 'desc')
+ );
+ onSnapshot(q, snap => {
+ renderMyListings(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+ });
+ }
+
+ function renderMyListings(list) {
+ const el = document.getElementById('my-listings');
+ const activeOnly = list.filter(l => l.status === 'active');
+ if (!activeOnly.length) {
+ el.innerHTML = `<div class="empty-state" style="padding:2.25rem 1.5rem;border:1px dashed var(--border);border-radius:var(--r-lg);text-align:center;"><h3 style="margin-bottom:.45rem;">No live listings right now</h3><p style="margin-bottom:1rem;">Post a meal to start receiving requests.</p><button class="btn btn-accent" onclick="window.scrollTo({ top: 0, behavior: 'smooth' });document.getElementById('f-hall').focus();">+ Post Listing</button></div>`;
+ return;
+ }
+ el.innerHTML = activeOnly.map(l => {
+ const d = l.availableAt?.toDate ? l.availableAt.toDate() : new Date();
+ const dStr = d.toLocaleDateString('en-US', { month:'short', day:'numeric' });
+ const tStr = d.toLocaleTimeString('en-US', { hour:'numeric', minute:'2-digit' });
+ return `
+ <div class="my-list-item">
+ <div style="flex:1;">
+ <div style="font-family:'Source Serif 4',Georgia,serif;font-size:1rem;font-weight:600;">${l.diningHall}</div>
+ <div style="font-size:.78rem;color:var(--muted);margin-top:.15rem;">$${l.price.toFixed(2)} · ${dStr} at ${tStr}</div>
+ </div>
+ <div style="display:flex;gap:.5rem;align-items:center;">
+ <span class="badge badge-green">ACTIVE</span>
+ <button class="btn btn-outline btn-sm" onclick="openEdit('${l.id}')">Edit</button>
+ <button class="btn btn-outline btn-sm" style="border-color:#dc2626;color:#b91c1c;" onclick="deleteListing('${l.id}','${l.status}')">Delete</button>
+ </div>
+ </div>`;
+ }).join('');
+ }
+
+ // Live preview 
+ window.preview = () => {
+ const hall = document.getElementById('f-hall').value;
+ const value = parseFloat(document.getElementById('f-value').value) || 0;
+ const price = parseFloat(document.getElementById('f-price').value) || 0;
+ const time = document.getElementById('f-time').value;
+ const notes = document.getElementById('f-notes').value.trim();
+
+ document.getElementById('p-hall').textContent = hall ? '' + hall : 'Select a dining hall';
+ document.getElementById('p-price').textContent = price ? '$' + price.toFixed(2) : '$—';
+ document.getElementById('p-value').textContent = value ? '$' + value.toFixed(2) : '$—';
+ document.getElementById('p-notes').textContent = notes ? `"${notes}"` : '';
+
+ if (time) {
+ const d = new Date(time);
+ document.getElementById('p-time').textContent =
+ '' + d.toLocaleDateString('en-US', { weekday:'short', month:'short', day:'numeric' }) +
+ ' · ' + d.toLocaleTimeString('en-US', { hour:'numeric', minute:'2-digit' });
+ } else {
+ document.getElementById('p-time').textContent = 'Pick a time';
+ }
+
+ const hint = document.getElementById('savings-hint');
+ const savEl = document.getElementById('p-savings');
+ if (value > 0 && price > 0) {
+ if (price >= value) {
+ hint.textContent = ' Your asking price should be less than the meal value.';
+ hint.style.color = '#991b1b';
+ savEl.style.display = 'none';
+ } else {
+ const pct = Math.round(((value - price) / value) * 100);
+ hint.textContent = ` Buyers save ${pct}% — that's a great deal!`;
+ hint.style.color = '#065f46';
+ savEl.textContent = `Save ${pct}%`;
+ savEl.style.display = 'inline-flex';
+ }
+ } else {
+ hint.textContent = ''; savEl.style.display = 'none';
+ }
+ };
+
+ const MAX_NOTES_LEN = 180;
+ function cleanText(v) { return (v || '').replace(/\s+/g, ' ').trim(); }
+
+ // Post listing 
+ window.postListing = async () => {
+ const hall = document.getElementById('f-hall').value;
+ const value = parseFloat(document.getElementById('f-value').value);
+ const price = parseFloat(document.getElementById('f-price').value);
+ const time = document.getElementById('f-time').value;
+ const notes = cleanText(document.getElementById('f-notes').value);
+ const errEl = document.getElementById('form-err');
+ errEl.style.display = 'none';
+
+ if (!hall) return showErr('Please select a dining hall.');
+ if (!Number.isFinite(value) || value <= 0) return showErr('Please enter a valid meal value.');
+ if (!Number.isFinite(price) || price <= 0) return showErr('Please enter your asking price.');
+ if (price >= value) return showErr('Your asking price must be less than the meal value.');
+ if (!time) return showErr('Please select an available date and time.');
+ if (new Date(time) < new Date()) return showErr('Please select a future date and time.');
+ if (notes.length > MAX_NOTES_LEN) return showErr(`Notes must be ${MAX_NOTES_LEN} characters or fewer.`);
+ document.getElementById('f-notes').value = notes;
+
+ function showErr(m) { errEl.textContent = m; errEl.style.display = 'block'; }
+
+ const btn = document.getElementById('btn-post');
+ btn.disabled = true; btn.innerHTML = '<div class="spinner"></div> Posting…';
+
+ try {
+ await addDoc(collection(db, 'listings'), {
+ sellerId: me.uid,
+ sellerName: meData.name,
+ sellerPhoto: meData.profilePhoto || '',
+ sellerRating: meData.avgRating || 0,
+ sellerRatingCount:meData.ratingCount || 0,
+        sellerTotalSold: meData.totalSold || 0,
+ diningHall: hall,
+ mealValue: value,
+ price,
+ availableAt: Timestamp.fromDate(new Date(time)),
+ notes,
+ status: 'active',
+ createdAt: serverTimestamp()
+ });
+
+ // Reset form
+ ['f-hall','f-value','f-price','f-time','f-notes'].forEach(id =>
+ document.getElementById(id).value = '');
+ window.preview();
+ document.getElementById('savings-hint').textContent = '';
+ toast('Listing posted! Buyers can now find it.', 'success');
+ } catch(e) {
+ console.error(e);
+ toast('Failed to post listing. Try again.', 'error');
+ }
+ btn.disabled = false; btn.textContent = 'Post Listing →';
+ };
+
+ // Delete listing permanently
+ window.deleteListing = async (id, status='') => {
+ if (status === 'pending') {
+   toast('This listing has an active request and cannot be deleted right now.', 'error');
+   return;
+ }
+ const ok = confirm('Delete this listing permanently? This cannot be undone.');
+ if (!ok) return;
+ try {
+   await deleteDoc(doc(db, 'listings', id));
+   toast('Listing deleted permanently.', 'success');
+ } catch (e) {
+   console.error(e);
+   toast('Failed to delete listing. Try again.', 'error');
+ }
+ };
+
+ function applyAvatar(id, user) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const init = ((user?.name || '?')[0] || '?').toUpperCase();
+    if (user?.profilePhoto) {
+      el.textContent = '';
+      el.style.backgroundImage = "url('" + user.profilePhoto + "')";
+      el.style.backgroundSize = 'cover';
+      el.style.backgroundPosition = 'center';
+      el.classList.add('has-photo');
+    } else {
+      el.textContent = init;
+      el.style.backgroundImage = '';
+      el.classList.remove('has-photo');
+    }
+  }
+
+ function toast(msg, type='') {
+ const t = document.createElement('div');
+ t.className = `toast ${type}`; t.textContent = msg;
+ document.getElementById('toasts').appendChild(t);
+ setTimeout(() => t.remove(), 4500);
+ }
+
+
+ // Edit listing 
+ window.openEdit = async (id) => {
+ try {
+ const snap = await getDoc(doc(db, 'listings', id));
+ if (!snap.exists()) return toast('Listing not found.', 'error');
+ const l = snap.data();
+ document.getElementById('edit-id').value = id;
+ document.getElementById('edit-value').value = l.mealValue ?? '';
+ document.getElementById('edit-price').value = l.price ?? '';
+ document.getElementById('edit-notes').value = l.notes || '';
+ const timeInput = document.getElementById('edit-time');
+ if (l.availableAt?.toDate) {
+ const d = l.availableAt.toDate();
+ d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+ timeInput.value = d.toISOString().slice(0, 16);
+ } else {
+ timeInput.value = '';
+ }
+ const now = new Date();
+ now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+ timeInput.min = now.toISOString().slice(0, 16);
+ document.getElementById('edit-err').style.display = 'none';
+ document.getElementById('edit-modal').classList.add('open');
+ } catch (e) {
+ console.error(e);
+ toast('Failed to load listing details.', 'error');
+ }
+ };
+
+ window.saveEdit = async () => {
+ const id = document.getElementById('edit-id').value;
+ const value = parseFloat(document.getElementById('edit-value').value);
+ const price = parseFloat(document.getElementById('edit-price').value);
+ const time = document.getElementById('edit-time').value;
+ const notes = cleanText(document.getElementById('edit-notes').value);
+ const errEl = document.getElementById('edit-err');
+ errEl.style.display = 'none';
+
+ if (!id) return;
+ if (!Number.isFinite(value) || value <= 0) return showEditErr('Please enter a valid meal value.');
+ if (!Number.isFinite(price) || price <= 0) return showEditErr('Please enter your asking price.');
+ if (price >= value) return showEditErr('Your asking price must be less than the meal value.');
+ if (!time) return showEditErr('Please select an available date and time.');
+ if (new Date(time) < new Date()) return showEditErr('Please select a future date and time.');
+ if (notes.length > MAX_NOTES_LEN) return showEditErr(`Notes must be ${MAX_NOTES_LEN} characters or fewer.`);
+ document.getElementById('edit-notes').value = notes;
+
+ const btn = document.getElementById('btn-save-edit');
+ btn.disabled = true;
+ btn.innerHTML = '<div class="spinner"></div> Saving…';
+ try {
+ await updateDoc(doc(db, 'listings', id), {
+ mealValue: value,
+ price,
+ notes,
+ availableAt: Timestamp.fromDate(new Date(time))
+ });
+ document.getElementById('edit-modal').classList.remove('open');
+ toast('Listing updated.', 'success');
+ } catch (e) {
+ console.error(e);
+ showEditErr('Failed to save changes. Please try again.');
+ }
+ btn.disabled = false;
+ btn.textContent = 'Save Changes';
+
+ function showEditErr(msg) {
+ errEl.textContent = msg;
+ errEl.style.display = 'block';
+ }
+ };
+
+ window.toggleNav = function() {
+   var btn    = document.getElementById('hamburger');
+   var drawer = document.getElementById('mobile-drawer');
+   if (!btn || !drawer) return;
+   var open   = drawer.classList.toggle('open');
+   btn.classList.toggle('open', open);
+ }
+ document.addEventListener('click', function(e) {
+   var drawer = document.getElementById('mobile-drawer');
+   var btn    = document.getElementById('hamburger');
+   if (!drawer || !btn) return;
+   if (!drawer.contains(e.target) && !btn.contains(e.target)) {
+     drawer.classList.remove('open');
+     btn.classList.remove('open');
+   }
+ });
+ setInterval(function() {
+   var desktop = document.querySelector('#nav-notif-msgs');
+   var mob = document.getElementById('mob-msg-badge');
+   if (!desktop || !mob) return;
+   var count = desktop.textContent;
+   if (count && desktop.style.display !== 'none') {
+     mob.textContent = count; mob.style.display = 'inline';
+   } else { mob.style.display = 'none'; }
+ }, 1000);
+
+</script>
+
+<!-- Floating feedback button -->
+<a href="https://docs.google.com/forms/d/e/1FAIpQLSdUyonvfvlpv7T6oQ2jBR94P2aSyiAn9H2W5nlcPUN65PwCfQ/viewform?usp=publish-editor" target="_blank"
+  style="position:fixed;bottom:1.5rem;left:1.5rem;z-index:200;
+    background:var(--umb-blue);color:#fff;
+    padding:.5rem 1rem;border-radius:99px;
+    font-size:.75rem;font-weight:700;text-decoration:none;
+    box-shadow:0 2px 12px rgba(0,50,90,.25);
+    display:flex;align-items:center;gap:.4rem;
+    transition:all .15s;"
+  onmouseover="this.style.background='var(--umb-blue-dark)';this.style.transform='translateY(-2px)'"
+  onmouseout="this.style.background='var(--umb-blue)';this.style.transform=''"
+  title="Share your feedback about PointSwap">
+  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+  </svg>
+  Feedback
+</a>
+
+<!-- Site Footer -->
+<footer style="margin-top:3rem;background:var(--umb-blue-dark);padding:1.75rem 2rem;border-top:3px solid var(--umb-gold);">
+  <div style="max-width:1200px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:1rem;">
+
+    <!-- Left: brand -->
+    <div style="display:flex;align-items:center;gap:.75rem;">
+      <div style="width:32px;height:32px;background:var(--umb-gold);border-radius:6px;display:flex;align-items:center;justify-content:center;font-family:'Source Serif 4',Georgia,serif;font-size:.8rem;font-weight:700;color:var(--umb-blue-dark);flex-shrink:0;">PS</div>
+      <div>
+        <div style="font-family:'Source Serif 4',Georgia,serif;font-weight:700;color:#fff;font-size:.9rem;line-height:1.2;">PointSwap</div>
+        <div style="font-size:.68rem;color:rgba(255,255,255,.45);letter-spacing:.05em;text-transform:uppercase;">UMass Boston Dining Exchange</div>
+      </div>
+    </div>
+
+    <!-- Center: links -->
+    <div style="display:flex;align-items:center;gap:1.5rem;flex-wrap:wrap;">
+      <a href="tos.html" style="color:rgba(255,255,255,.55);font-size:.78rem;text-decoration:none;transition:color .15s;" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='rgba(255,255,255,.55)'">Terms of Service</a>
+      <a href="https://www.umb.edu/registrar/academic-calendar/" target="_blank" style="color:rgba(255,255,255,.55);font-size:.78rem;text-decoration:none;transition:color .15s;" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='rgba(255,255,255,.55)'">UMB Calendar</a>
+      <a href="https://docs.google.com/forms/d/e/1FAIpQLSdUyonvfvlpv7T6oQ2jBR94P2aSyiAn9H2W5nlcPUN65PwCfQ/viewform?usp=publish-editor" target="_blank" style="color:rgba(255,255,255,.55);font-size:.78rem;text-decoration:none;transition:color .15s;" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='rgba(255,255,255,.55)'">Give Feedback</a>
+    </div>
+
+    <!-- Right: Instagram -->
+    <a href="https://www.instagram.com/pointswap.umb/" target="_blank" rel="noopener"
+      style="display:flex;align-items:center;gap:.6rem;text-decoration:none;
+        background:linear-gradient(135deg,#833ab4,#fd1d1d,#fcb045);
+        padding:.55rem 1rem;border-radius:99px;
+        color:#fff;font-size:.8rem;font-weight:700;
+        box-shadow:0 2px 12px rgba(0,0,0,.25);
+        transition:all .15s;flex-shrink:0;"
+      onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 4px 18px rgba(0,0,0,.35)'"
+      onmouseout="this.style.transform='';this.style.boxShadow='0 2px 12px rgba(0,0,0,.25)'">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="2" y="2" width="20" height="20" rx="5" ry="5"/>
+        <circle cx="12" cy="12" r="4"/>
+        <circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none"/>
+      </svg>
+      @pointswap.umb
+    </a>
+
+  </div>
+
+  <div style="max-width:1200px;margin:.75rem auto 0;padding-top:.75rem;border-top:1px solid rgba(255,255,255,.08);text-align:center;">
+    <span style="font-size:.68rem;color:rgba(255,255,255,.3);">© 2025 PointSwap · A UMass Boston student project · Not affiliated with UMass Boston Dining Services</span>
+  </div>
+</footer>
+
+</body>
+</html>
